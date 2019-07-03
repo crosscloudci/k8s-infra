@@ -34,7 +34,7 @@ Kubespray:
     - docker push "$CI_REGISTRY_IMAGE/$CI_COMMIT_REF_NAME"
 
 Kubernetes:
-  image: buildpack-deps/stretch
+  image: buildpack-deps:stretch
   stage: Dependencies
   script:
     - PROJECT_JOB=$(curl --header "PRIVATE-TOKEN:${TOKEN}" "${BASE_URL}/api/v4/projects/14/pipelines/${PIPELINE_ID}/jobs?scope=success" | jq '.[] | select(.name=="container") | .id') 
