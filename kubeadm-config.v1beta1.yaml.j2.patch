@@ -1,6 +1,6 @@
---- kubeadm-config.v1beta1.yaml.j2	2019-07-01 21:08:07.209720941 -0400
-+++ kubeadm-config.v1beta1.yaml.j2.patch	2019-07-01 21:18:48.693799041 -0400
-@@ -36,7 +36,7 @@
+--- kubeadm-config.v1beta1.yaml.j2	2019-07-03 23:00:51.168094354 +0000
++++ kubeadm-config.v1beta1.yaml.j2.patch	2019-07-03 23:01:24.232244419 +0000
+@@ -73,7 +73,7 @@
    dnsDomain: {{ dns_domain }}
    serviceSubnet: {{ kube_service_addresses }}
    podSubnet: {{ kube_pods_subnet }}

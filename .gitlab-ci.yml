@@ -19,18 +19,15 @@ Kubespray:
     # Fetch Patches
     - wget https://raw.githubusercontent.com/crosscloudci/k8s-infra/master/calico-node.yml.j2.patch
     - wget https://raw.githubusercontent.com/crosscloudci/k8s-infra/master/coredns-deployment.yml.j2.patch
-    - wget https://raw.githubusercontent.com/crosscloudci/k8s-infra/master/kubeadm-images.patch
-    - wget https://raw.githubusercontent.com/crosscloudci/k8s-infra/master/kubeadm-config.v1alpha2.yaml.j2.patch
-    - wget https://raw.githubusercontent.com/crosscloudci/k8s-infra/master/kubeadm-config.v1alpha3.yaml.j2.patch
+    - wget https://raw.githubusercontent.com/crosscloudci/k8s-infra/master/kubeadm-images.yaml.j2.patch
     - wget https://raw.githubusercontent.com/crosscloudci/k8s-infra/master/kubeadm-config.v1beta1.yaml.j2.patch
+    - wget https://raw.githubusercontent.com/crosscloudci/k8s-infra/master/kubeadm-config.v1beta2.yaml.j2.patch
     # Apply Patches
-    - sleep 1000000
-    - patch < calico-node.yml.j2.patch
-    - patch < coredns-deployment.yml.j2.patch
-    - patch < kubeadm-images.patch
-    - patch < kubeadm-config.v1alpha2.yaml.j2.patch
-    - patch < kubeadm-config.v1alpha3.yaml.j2.patch
-    - patch < kubeadm-config.v1beta1.yaml.j2.patch
+    - patch roles/network_plugin/calico/templates/calico-node.yml.j2 calico-node.yml.j2.patch
+    - patch roles/kubernetes-apps/ansible/templates/coredns-deployment.yml.j2 coredns-deployment.yml.j2.patch
+    - patch roles/download/templates/kubeadm-images.yaml.j2 kubeadm-images.yaml.j2.patch
+    - patch roles/kubernetes/master/templates/kubeadm-config.v1beta2.yaml.j2 kubeadm-config.v1beta1.yaml.j2.patch
+    - patch roles/kubernetes/master/templates/kubeadm-config.v1beta2.yaml.j2 kubeadm-config.v1beta2.yaml.j2.patch
     - docker build -t "$CI_REGISTRY_IMAGE/$CI_COMMIT_REF_NAME" . 
     - docker push "$CI_REGISTRY_IMAGE/$CI_COMMIT_REF_NAME"
 

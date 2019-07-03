@@ -1,5 +1,5 @@
---- coredns-deployment.yml.j2	2019-06-19 13:16:01.042339709 -0400
-+++ coredns-deployment.yml.j2.patch	2019-07-01 21:21:48.302461479 -0400
+--- coredns-deployment.yml.j2	2019-07-03 23:14:20.251767720 +0000
++++ coredns-deployment.yml.j2.patch	2019-07-03 23:14:59.039943774 +0000
 @@ -1,5 +1,5 @@
  ---
 -apiVersion: extensions/v1beta1

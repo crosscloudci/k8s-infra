@@ -1,0 +1,11 @@
+--- kubeadm-images.yaml.j2	2019-07-03 23:06:48.361714277 +0000
++++ kubeadm-images.yaml.j2.patch	2019-07-03 23:07:08.381805238 +0000
+@@ -6,7 +6,7 @@
+ apiVersion: kubeadm.k8s.io/v1beta1
+ kind: ClusterConfiguration
+ imageRepository: {{ kube_image_repo }}
+-kubernetesVersion: {{ kube_version }}
++kubernetesVersion: {{ kube_image_version }}
+ etcd:
+   external:
+       endpoints:
