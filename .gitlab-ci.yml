@@ -13,7 +13,7 @@ before_script:
   # - source /opt/local/etc/rvmrc ; source /opt/local/etc/profile.d/rvm.sh ; cp -a /opt/local/dashboard /dashboard ; pushd /dashboard ; source /opt/local/.env ; ./bin/update_dashboard ; popd
 
 Kubespray:
-  image: crosscloudci/debian-docker:amd64
+  image: crosscloudci/debian-docker:latest
   stage: Dependencies
   script:
     # Fetch Patches
