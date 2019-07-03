@@ -24,6 +24,7 @@ Kubespray:
     - wget https://raw.githubusercontent.com/crosscloudci/k8s-infra/master/kubeadm-config.v1alpha3.yaml.j2.patch
     - wget https://raw.githubusercontent.com/crosscloudci/k8s-infra/master/kubeadm-config.v1beta1.yaml.j2.patch
     # Apply Patches
+    - sleep 1000000
     - patch < calico-node.yml.j2.patch
     - patch < coredns-deployment.yml.j2.patch
     - patch < kubeadm-images.patch
@@ -37,6 +38,7 @@ Kubernetes:
   image: buildpack-deps:stretch
   stage: Dependencies
   script:
+    - apt update && apt -y install jq
     - PROJECT_JOB=$(curl --header "PRIVATE-TOKEN:${TOKEN}" "${BASE_URL}/api/v4/projects/14/pipelines/${PIPELINE_ID}/jobs?scope=success" | jq '.[] | select(.name=="container") | .id') 
     - curl -s -o data/kubespray.env -L "${BASE_URL}/kubernetes/kubernetes/-/jobs/${PROJECT_JOB}/artifacts/raw/kubespray.env"
     - cat data/kubespray.env
