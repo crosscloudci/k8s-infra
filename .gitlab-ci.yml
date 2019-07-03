@@ -3,7 +3,7 @@ stages:
   # - Bootstrap
 
 before_script:
-  - export BASE_URL=${BASE_URL- export CI_COMMIT_SHA_SHORT=$(echo ${CI_COMMIT_SHA} | cut -c -8)
+  - export BASE_URL=${BASE_URL- export CI_COMMIT_SHA_SHORT=$(echo ${CI_COMMIT_SHA} | cut -c -8)}
   - >
     if [ -z "$CROSS_CLOUD_YML" ]; then
       export CROSS_CLOUD_YML="https://raw.githubusercontent.com/CrossCloudCI/cncf-configuration/production/cross-cloud.yml"
