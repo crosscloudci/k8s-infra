@@ -1,0 +1,49 @@
+stages:
+  - Dependencies
+  # - Bootstrap
+
+before_script:
+  - export BASE_URL=${BASE_URL- export CI_COMMIT_SHA_SHORT=$(echo ${CI_COMMIT_SHA} | cut -c -8)
+  - >
+    if [ -z "$CROSS_CLOUD_YML" ]; then
+      export CROSS_CLOUD_YML="https://raw.githubusercontent.com/CrossCloudCI/cncf-configuration/production/cross-cloud.yml"
+    else
+      export CROSS_CLOUD_YML="$CROSS_CLOUD_YML"
+    fi
+  # - source /opt/local/etc/rvmrc ; source /opt/local/etc/profile.d/rvm.sh ; cp -a /opt/local/dashboard /dashboard ; pushd /dashboard ; source /opt/local/.env ; ./bin/update_dashboard ; popd
+
+Kubespray:
+  image: crosscloudci/debian-docker:amd64
+  stage: Dependencies
+  script:
+    # Fetch Patches
+    - wget https://raw.githubusercontent.com/crosscloudci/k8s-infra/master/calico-node.yml.j2.patch
+    - wget https://raw.githubusercontent.com/crosscloudci/k8s-infra/master/coredns-deployment.yml.j2.patch
+    - wget https://raw.githubusercontent.com/crosscloudci/k8s-infra/master/kubeadm-images.patch
+    - wget https://raw.githubusercontent.com/crosscloudci/k8s-infra/master/kubeadm-config.v1alpha2.yaml.j2.patch
+    - wget https://raw.githubusercontent.com/crosscloudci/k8s-infra/master/kubeadm-config.v1alpha3.yaml.j2.patch
+    - wget https://raw.githubusercontent.com/crosscloudci/k8s-infra/master/kubeadm-config.v1beta1.yaml.j2.patch
+    # Apply Patches
+    - patch < calico-node.yml.j2.patch
+    - patch < coredns-deployment.yml.j2.patch
+    - patch < kubeadm-images.patch
+    - patch < kubeadm-config.v1alpha2.yaml.j2.patch
+    - patch < kubeadm-config.v1alpha3.yaml.j2.patch
+    - patch < kubeadm-config.v1beta1.yaml.j2.patch
+    - docker build -t "$CI_REGISTRY_IMAGE/$CI_COMMIT_REF_NAME" . 
+    - docker push "$CI_REGISTRY_IMAGE/$CI_COMMIT_REF_NAME"
+
+Kubernetes:
+  image: buildpack-deps/stretch
+  stage: Dependencies
+  script:
+    - PROJECT_JOB=$(curl --header "PRIVATE-TOKEN:${TOKEN}" "${BASE_URL}/api/v4/projects/14/pipelines/${PIPELINE_ID}/jobs?scope=success" | jq '.[] | select(.name=="container") | .id') 
+    - curl -s -o data/kubespray.env -L "${BASE_URL}/kubernetes/kubernetes/-/jobs/${PROJECT_JOB}/artifacts/raw/kubespray.env"
+    - cat data/kubespray.env
+
+Kubernetes:
+  stage: Bootstrap
+  image: "$CI_REGISTRY_IMAGE/$CI_COMMIT_REF_NAME"
+    - source nodes.env
+    - CONFIG_FILE=inventory/mycluster/hosts.yml python3 contrib/inventory_builder/inventory.py "${MASTERS[@]}" "${WORKERS[@]}"
+
