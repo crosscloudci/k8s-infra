@@ -1,0 +1,11 @@
+--- kubeadm-config.v1alpha3.yaml.j2	2019-07-01 21:07:58.073890749 -0400
++++ kubeadm-config.v1alpha3.yaml.j2.patch	2019-07-01 21:16:58.455847621 -0400
+@@ -36,7 +36,7 @@
+   dnsDomain: {{ dns_domain }}
+   serviceSubnet: {{ kube_service_addresses }}
+   podSubnet: {{ kube_pods_subnet }}
+-kubernetesVersion: {{ kube_version }}
++kubernetesVersion: {{ kube_image_version }}
+ {% if kubeadm_config_api_fqdn is defined %}
+ controlPlaneEndpoint: {{ kubeadm_config_api_fqdn }}:{{ loadbalancer_apiserver.port | default(kube_apiserver_port) }}
+ {% else %}

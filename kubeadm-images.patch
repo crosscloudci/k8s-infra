@@ -1,0 +1,11 @@
+--- kubeadm-images.yaml.j2	2019-06-19 13:16:01.042339709 -0400
++++ kubeadm-images.yaml.j2.patch	2019-06-22 21:07:20.182294888 -0400
+@@ -28,7 +28,7 @@
+ kind: ClusterConfiguration
+ {% endif %}
+ imageRepository: {{ kube_image_repo }}
+-kubernetesVersion: {{ kube_version }}
++kubernetesVersion: {{ kube_image_version }}
+ etcd:
+   external:
+       endpoints:
