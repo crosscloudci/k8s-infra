@@ -41,9 +41,9 @@ Kubernetes:
     - curl -s -o data/kubespray.env -L "${BASE_URL}/kubernetes/kubernetes/-/jobs/${PROJECT_JOB}/artifacts/raw/kubespray.env"
     - cat data/kubespray.env
 
-Kubernetes:
-  stage: Bootstrap
-  image: "$CI_REGISTRY_IMAGE/$CI_COMMIT_REF_NAME"
-    - source nodes.env
-    - CONFIG_FILE=inventory/mycluster/hosts.yml python3 contrib/inventory_builder/inventory.py "${MASTERS[@]}" "${WORKERS[@]}"
+# Kubernetes:
+#   stage: Bootstrap
+#   image: "$CI_REGISTRY_IMAGE/$CI_COMMIT_REF_NAME"
+#     - source nodes.env
+#     - CONFIG_FILE=inventory/mycluster/hosts.yml python3 contrib/inventory_builder/inventory.py "${MASTERS[@]}" "${WORKERS[@]}"
 
