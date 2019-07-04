@@ -1,5 +1,5 @@
---- calico-node.yml.j2	2019-07-03 23:10:52.386823682 +0000
-+++ calico-node.yml.j2.patch	2019-07-03 23:11:46.683070366 +0000
+--- calico-node.yml.j2	2019-06-19 13:16:01.058339409 -0400
++++ calico-node.yml.j2.patch	2019-07-04 17:04:01.870204515 -0400
 @@ -3,7 +3,7 @@
  # as the Calico CNI plugins and network config on
  # each master and worker node in a Kubernetes cluster.
