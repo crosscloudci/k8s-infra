@@ -28,6 +28,7 @@ Kubespray:
     - patch roles/download/templates/kubeadm-images.yaml.j2 kubeadm-images.yaml.j2.patch
     - patch roles/kubernetes/master/templates/kubeadm-config.v1beta1.yaml.j2 kubeadm-config.v1beta1.yaml.j2.patch
     - patch roles/kubernetes/master/templates/kubeadm-config.v1beta2.yaml.j2 kubeadm-config.v1beta2.yaml.j2.patch
+    - docker login -u "gitlab-ci-token" -p "$CI_JOB_TOKEN" "$CI_REGISTRY"
     - docker build -t "$CI_REGISTRY_IMAGE:$CI_COMMIT_REF_NAME" . 
     - docker push "$CI_REGISTRY_IMAGE:$CI_COMMIT_REF_NAME"
 
