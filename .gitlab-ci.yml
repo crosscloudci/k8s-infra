@@ -26,7 +26,7 @@ Kubespray:
     - patch roles/network_plugin/calico/templates/calico-node.yml.j2 calico-node.yml.j2.patch
     - patch roles/kubernetes-apps/ansible/templates/coredns-deployment.yml.j2 coredns-deployment.yml.j2.patch
     - patch roles/download/templates/kubeadm-images.yaml.j2 kubeadm-images.yaml.j2.patch
-    - patch roles/kubernetes/master/templates/kubeadm-config.v1beta2.yaml.j2 kubeadm-config.v1beta1.yaml.j2.patch
+    - patch roles/kubernetes/master/templates/kubeadm-config.v1beta1.yaml.j2 kubeadm-config.v1beta1.yaml.j2.patch
     - patch roles/kubernetes/master/templates/kubeadm-config.v1beta2.yaml.j2 kubeadm-config.v1beta2.yaml.j2.patch
     - docker build -t "$CI_REGISTRY_IMAGE/$CI_COMMIT_REF_NAME" . 
     - docker push "$CI_REGISTRY_IMAGE/$CI_COMMIT_REF_NAME"
