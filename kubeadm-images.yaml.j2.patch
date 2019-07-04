@@ -1,5 +1,5 @@
---- kubeadm-images.yaml.j2	2019-07-03 23:06:48.361714277 +0000
-+++ kubeadm-images.yaml.j2.patch	2019-07-03 23:07:08.381805238 +0000
+--- kubeadm-images.yaml.j2	2019-07-04 17:01:15.649298596 -0400
++++ kubeadm-images.yaml.j2.patch	2019-07-04 17:10:57.330471641 -0400
 @@ -6,7 +6,7 @@
  apiVersion: kubeadm.k8s.io/v1beta1
  kind: ClusterConfiguration
