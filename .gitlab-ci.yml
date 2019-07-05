@@ -69,7 +69,7 @@ K8s-Bootstrap:
   stage: Bootstrap
   dependencies:
     - Kubernetes
-    - Hardware
+    - Infra
   script:
     - source nodes.env
     - source kubespray.env
