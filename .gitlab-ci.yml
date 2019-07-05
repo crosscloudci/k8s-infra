@@ -48,13 +48,13 @@ Kubernetes:
     paths:
       - kubespray.env
 
-Hardware:
+Infra:
   image: buildpack-deps:stretch
   stage: Dependencies
   script:
     - apt update && apt -y install jq
     - PROJECT_JOB=$(curl --header "PRIVATE-TOKEN:${TOKEN}" "${BASE_URL}/api/v4/projects/63/pipelines/${INFRA_PIPELINE_ID}/jobs?scope=success" | jq '.[] | select(.name=="Release") | .id') 
-    - curl -s -o kubespray.env -L "${BASE_URL}/kubernetes/kubernetes/-/jobs/${PROJECT_JOB}/artifacts/raw/kubespray.env"
+    - curl -s -o kubespray.env -L "${BASE_URL}/kubernetes/kubernetes/-/jobs/${PROJECT_JOB}/artifacts/raw/terraform/nodes.env"
     - cat kubespray.env
 
   artifacts:
