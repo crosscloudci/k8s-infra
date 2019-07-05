@@ -51,9 +51,9 @@ Kubernetes:
 K8s-Bootstrap:
   image: "$CI_REGISTRY_IMAGE/$CI_COMMIT_REF_NAME"
   stage: Bootstrap
-  dependencies: Kubernetes
+  dependencies:
+    - Kubernetes
   script:
     - source nodes.env
-    - >
-      CONFIG_FILE=inventory/mycluster/hosts.yml python3 contrib/inventory_builder/inventory.py "${MASTERS[@]}" "${WORKERS[@]}"
+    - CONFIG_FILE=inventory/mycluster/hosts.yml python3 contrib/inventory_builder/inventory.py "${MASTERS[@]}" "${WORKERS[@]}"
 
