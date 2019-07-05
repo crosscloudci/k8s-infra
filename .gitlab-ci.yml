@@ -1,6 +1,6 @@
 stages:
   - Dependencies
-  # - Bootstrap
+  - Bootstrap
 
 before_script:
   - export BASE_URL=${BASE_URL:-$(echo $CI_PROJECT_URL |  cut -d'/' -f1-3)}
@@ -38,13 +38,21 @@ Kubernetes:
   script:
     - apt update && apt -y install jq
     - PROJECT_JOB=$(curl --header "PRIVATE-TOKEN:${TOKEN}" "${BASE_URL}/api/v4/projects/14/pipelines/${PIPELINE_ID}/jobs?scope=success" | jq '.[] | select(.name=="container") | .id') 
-    - sleep 100000
-    - curl -s -o data/kubespray.env -L "${BASE_URL}/kubernetes/kubernetes/-/jobs/${PROJECT_JOB}/artifacts/raw/kubespray.env"
-    - cat data/kubespray.env
+    - curl -s -o kubespray.env -L "${BASE_URL}/kubernetes/kubernetes/-/jobs/${PROJECT_JOB}/artifacts/raw/kubespray.env"
+    - cat kubespray.env
 
-# Kubernetes:
-#   stage: Bootstrap
-#   image: "$CI_REGISTRY_IMAGE/$CI_COMMIT_REF_NAME"
-#     - source nodes.env
-#     - CONFIG_FILE=inventory/mycluster/hosts.yml python3 contrib/inventory_builder/inventory.py "${MASTERS[@]}" "${WORKERS[@]}"
+  artifacts:
+    name: "${CI_JOB_NAME}.${CI_PIPELINE_ID}.${CI_JOB_ID}"
+    when: always
+    expire_in: 1 weeks
+    paths:
+      - kubespray.env
+
+K8s-Bootstarp:
+  image: "$CI_REGISTRY_IMAGE/$CI_COMMIT_REF_NAME"
+  stage: Bootstrap
+  dependencies: Kubernetes
+  script:
+    - source nodes.env
+    - CONFIG_FILE=inventory/mycluster/hosts.yml python3 contrib/inventory_builder/inventory.py "${MASTERS[@]}" "${WORKERS[@]}"
 
