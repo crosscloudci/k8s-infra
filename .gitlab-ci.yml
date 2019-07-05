@@ -54,8 +54,9 @@ Infra:
   script:
     - apt update && apt -y install jq
     - PROJECT_JOB=$(curl --header "PRIVATE-TOKEN:${TOKEN}" "${BASE_URL}/api/v4/projects/63/pipelines/${INFRA_PIPELINE_ID}/jobs?scope=success" | jq '.[] | select(.name=="Release") | .id') 
-    - curl -s -o kubespray.env -L "${BASE_URL}/kubernetes/kubernetes/-/jobs/${PROJECT_JOB}/artifacts/raw/terraform/nodes.env"
-    - cat kubespray.env
+    - curl -s -o nodes.env -L "${BASE_URL}/kubernetes/kubernetes/-/jobs/${PROJECT_JOB}/artifacts/raw/terraform/nodes.env"
+    - sleep 10000000
+    - cat nodes.env
 
   artifacts:
     name: "${CI_JOB_NAME}.${CI_PIPELINE_ID}.${CI_JOB_ID}"
