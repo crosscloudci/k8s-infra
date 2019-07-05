@@ -71,7 +71,7 @@ K8s-Bootstrap:
     - Kubernetes
     - Infra
   script:
-    - echo "$SSH_KEY" > .id_rsa
+    - echo "$SSH_KEY" > .id_rsa && chmod 400 .id_rsa
     - eval $(ssh-agent) && ssh-add .id_rsa
     - source nodes.env
     - cp -rfp inventory/sample inventory/mycluster
