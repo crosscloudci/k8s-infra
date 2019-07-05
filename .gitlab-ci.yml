@@ -71,7 +71,7 @@ K8s-Bootstrap:
     - Kubernetes
     - Infra
   variables:
-    ANSIBLE_HOST_KEY_CHECKING: False
+    ANSIBLE_HOST_KEY_CHECKING: "False"
   script:
     - echo "$SSH_KEY" > .id_rsa && chmod 400 .id_rsa
     - eval $(ssh-agent) && ssh-add .id_rsa
