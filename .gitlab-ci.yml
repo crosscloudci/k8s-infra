@@ -115,7 +115,9 @@ K8s-Reset:
     - ansible-playbook -i inventory/mycluster/hosts.yml -e kubeconfig_localhost=true -e kubectl_localhost=true -e @kubespray.env -e "reset_confirmation='yes'" --become --become-user=root reset.yml
 
 K8s-Conformance:
-  image: "bitnami/kubectl:latest"
+  image:
+    name: "bitnami/kubectl:latest"
+    entrypoint: [""]
   stage: Test
   only:
     variables:
