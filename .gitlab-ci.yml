@@ -85,14 +85,13 @@ K8s-Bootstrap:
     - cp -rfp inventory/sample inventory/mycluster
     - CONFIG_FILE=inventory/mycluster/hosts.yml python3 contrib/inventory_builder/inventory.py "${MASTERS[@]}" "${WORKERS[@]}"
     - ansible-playbook -i inventory/mycluster/hosts.yml -e kubeconfig_localhost=true -e kubectl_localhost=true -e @kubespray.env --become --become-user=root cluster.yml
-    - pwd && ls -la
-    - sleep 10000000
+    - cd - && mv inventory/mycluster .
   artifacts:
     name: "${CI_JOB_NAME}.${CI_PIPELINE_ID}.${CI_JOB_ID}"
     when: always
     expire_in: 1 weeks
     paths:
-      - /kubespray/inventory/mycluster/artifacts/admin.conf
+      - inventory/mycluster/artifacts/admin.conf
 
 K8s-Reset:
   image: "$CI_REGISTRY_IMAGE:$CI_COMMIT_REF_NAME"
