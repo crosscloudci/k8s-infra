@@ -90,8 +90,7 @@ K8s-Bootstrap:
     when: always
     expire_in: 1 weeks
     paths:
-      - inventory/mycluster
-      - inventory/mycluster/artifacts/admin.conf
+      - /kubespray/inventory/mycluster/artifacts/admin.conf
 
 K8s-Reset:
   image: "$CI_REGISTRY_IMAGE:$CI_COMMIT_REF_NAME"
