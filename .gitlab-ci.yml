@@ -105,6 +105,7 @@ K8s-Reset:
       - $RESET == "yes"
   dependencies:
     - Infra
+    - Kubernetes
   variables:
     ANSIBLE_HOST_KEY_CHECKING: "False"
   script:
