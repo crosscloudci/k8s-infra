@@ -126,7 +126,7 @@ K8s-Conformance:
   variables:
     KUBERNETES_CONFORMANCE_TEST: "y"
   script:
-    - apt install -y rsync
+    - apt update && apt install -y rsync
     - export KUBECONFIG=$(pwd)/mycluster/artifacts/admin.conf 
     # - wget https://github.com/kubernetes/kubernetes/archive/v1.14.4.tar.gz
     # - tar -xvf v1.14.4.tar.gz
