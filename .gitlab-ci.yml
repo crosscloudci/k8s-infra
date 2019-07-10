@@ -116,7 +116,7 @@ K8s-Reset:
 
 K8s-Conformance:
   image:
-    name: "crosscloudci/debian-docker-go"
+    name: "golang:1.12.7-stretch"
   stage: Test
   only:
     variables:
@@ -128,9 +128,11 @@ K8s-Conformance:
   script:
     - apt install -y rsync
     - export KUBECONFIG=$(pwd)/mycluster/artifacts/admin.conf 
-    - wget https://github.com/kubernetes/kubernetes/archive/v1.14.4.tar.gz
-    - tar -xvf v1.14.4.tar.gz
-    - cd kubernetes-1.14.4
+    # - wget https://github.com/kubernetes/kubernetes/archive/v1.14.4.tar.gz
+    # - tar -xvf v1.14.4.tar.gz
+    # - cd kubernetes-1.14.4
+    - git clone https://github.com/kubernetes/kubernetes.git /kubernetes
+    - cd /kubernetes
     - go get -u k8s.io/test-infra/kubetest
     - make WHAT="test/e2e/e2e.test vendor/github.com/onsi/ginkgo/ginkgo cmd/kubectl"
     - kubetest --provider=skeleton --test --test_args="--ginkgo.focus=\[Conformance\]"
