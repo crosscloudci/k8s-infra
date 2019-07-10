@@ -123,14 +123,17 @@ K8s-Conformance:
       - $RESET == null
   dependencies:
     - K8s-Bootstrap
+  variables:
+    KUBERNETES_CONFORMANCE_TEST: "y"
   script:
-    - git clone https://github.com/kubernetes/kubernetes.git
+    - apt install -y rsync
     - export KUBECONFIG=$(pwd)/mycluster/artifacts/admin.conf 
-    - cd kubernetes
-    - mkdir -p ./_output/dockerized/bin/linux/amd64
-    - curl -LO -o ./_output/dockerized/bin/linux/amd64/ https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl
+    - wget https://github.com/kubernetes/kubernetes/archive/v1.14.4.tar.gz
+    - tar -xvf v1.14.4.tar.gz
+    - cd kubernetes-1.14.4
     - go get -u k8s.io/test-infra/kubetest
-    - sleep 1000000
+    - make WHAT="test/e2e/e2e.test vendor/github.com/onsi/ginkgo/ginkgo cmd/kubectl"
+    - kubetest --provider=skeleton --test --test_args="--ginkgo.focus=\[Conformance\]"
     #Sonobuoy Tests (Only for stable)
     # - wget https://github.com/heptio/sonobuoy/releases/download/v0.15.0/sonobuoy_0.15.0_linux_amd64.tar.gz 
     # - tar -xvf ./sonobuoy_0.15.0_linux_amd64.tar.gz
