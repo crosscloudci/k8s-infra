@@ -116,8 +116,7 @@ K8s-Reset:
 
 K8s-Conformance:
   image:
-    name: "bitnami/kubectl:latest"
-    entrypoint: [""]
+    name: "golang:1.12.7-stretch"
   stage: Test
   only:
     variables:
@@ -126,9 +125,13 @@ K8s-Conformance:
     - K8s-Bootstrap
   script:
     - export KUBECONFIG=$(pwd)/mycluster/artifacts/admin.conf 
-    - wget https://github.com/heptio/sonobuoy/releases/download/v0.15.0/sonobuoy_0.15.0_linux_amd64.tar.gz 
-    - tar -xvf ./sonobuoy_0.15.0_linux_amd64.tar.gz
+    - curl -LO https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl
+    - go get -u k8s.io/test-infra/kubetest
     - sleep 1000000
+    #Sonobuoy Tests (Only for stable)
+    # - wget https://github.com/heptio/sonobuoy/releases/download/v0.15.0/sonobuoy_0.15.0_linux_amd64.tar.gz 
+    # - tar -xvf ./sonobuoy_0.15.0_linux_amd64.tar.gz
+    # - ./sonobuoy run --wait
 
 
  
