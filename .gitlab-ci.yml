@@ -127,7 +127,8 @@ K8s-Conformance:
     - git clone https://github.com/kubernetes/kubernetes.git
     - export KUBECONFIG=$(pwd)/mycluster/artifacts/admin.conf 
     - cd kubernetes
-    - curl -LO https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl
+    - mkdir -p ./_output/dockerized/bin/linux/amd64
+    - curl -LO -o ./_output/dockerized/bin/linux/amd64/ https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl
     - go get -u k8s.io/test-infra/kubetest
     - sleep 1000000
     #Sonobuoy Tests (Only for stable)
