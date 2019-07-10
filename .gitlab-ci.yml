@@ -116,7 +116,7 @@ K8s-Reset:
 
 K8s-Conformance:
   image:
-    name: "golang:1.12.7-stretch"
+    name: "crosscloudci/debian-docker-go"
   stage: Test
   only:
     variables:
