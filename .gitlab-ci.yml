@@ -125,6 +125,7 @@ K8s-Conformance:
   only:
     variables:
       - $RESET == null
+      - $ARCH == "amd64"
   dependencies:
     - K8s-Bootstrap
     - Kubernetes
@@ -147,6 +148,40 @@ K8s-Conformance:
     # - wget https://github.com/heptio/sonobuoy/releases/download/v0.15.0/sonobuoy_0.15.0_linux_amd64.tar.gz 
     # - tar -xvf ./sonobuoy_0.15.0_linux_amd64.tar.gz
     # - ./sonobuoy run --wait
+
+K8s-Conformance-arm64:
+  tags:
+    - arm
+  image:
+    name: "golang:1.12.7-stretch"
+  stage: Test
+  only:
+    variables:
+      - $RESET == null
+      - $ARCH == "arm64"
+  dependencies:
+    - K8s-Bootstrap
+    - Kubernetes
+  variables:
+    KUBERNETES_CONFORMANCE_TEST: "y"
+  script:
+    - source release.env
+    - apt update && apt install -y rsync
+    - export KUBECONFIG=$(pwd)/mycluster/artifacts/admin.conf 
+    # - wget https://github.com/kubernetes/kubernetes/archive/v1.14.4.tar.gz
+    # - tar -xvf v1.14.4.tar.gz
+    # - cd kubernetes-1.14.4
+    - git clone https://github.com/kubernetes/kubernetes.git /kubernetes
+    - cd /kubernetes
+    - git checkout "$KUBERNETES_SHA"
+    - go get -u k8s.io/test-infra/kubetest
+    - make WHAT="test/e2e/e2e.test vendor/github.com/onsi/ginkgo/ginkgo cmd/kubectl"
+    - kubetest --provider=skeleton --test --test_args="--ginkgo.focus=\[Conformance\]"
+    #Sonobuoy Tests (Only for stable)
+    # - wget https://github.com/heptio/sonobuoy/releases/download/v0.15.0/sonobuoy_0.15.0_linux_amd64.tar.gz 
+    # - tar -xvf ./sonobuoy_0.15.0_linux_amd64.tar.gz
+    # - ./sonobuoy run --wait
+
 
 
  
