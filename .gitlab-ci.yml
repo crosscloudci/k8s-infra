@@ -124,8 +124,8 @@ K8s-Conformance:
   stage: Test
   only:
     variables:
-      - $RESET == null
       - $ARCH == "amd64"
+      - $RESET == null
   dependencies:
     - K8s-Bootstrap
     - Kubernetes
@@ -157,8 +157,8 @@ K8s-Conformance-arm64:
   stage: Test
   only:
     variables:
-      - $RESET == null
       - $ARCH == "arm64"
+      - $RESET == null
   dependencies:
     - K8s-Bootstrap
     - Kubernetes
@@ -174,7 +174,6 @@ K8s-Conformance-arm64:
     - git clone https://github.com/kubernetes/kubernetes.git /kubernetes
     - cd /kubernetes
     - git checkout "$KUBERNETES_SHA"
-    - sleep 10000000
     - go get -u k8s.io/test-infra/kubetest
     - make WHAT="test/e2e/e2e.test vendor/github.com/onsi/ginkgo/ginkgo cmd/kubectl"
     - kubetest --provider=skeleton --test --test_args="--ginkgo.focus=\[Conformance\]"
