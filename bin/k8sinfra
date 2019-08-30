@@ -1,0 +1,285 @@
+#!/usr/bin/env ruby
+
+lib = File.expand_path('../../lib', __FILE__)
+$LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
+
+require 'byebug'
+require 'logger'
+require 'thor'
+require 'yaml'
+require 'faraday'
+require 'erb'
+
+#require 'crosscloudci/ciservice/onap/build_pipeline'
+#require 'crosscloudci/ciservice/build_pipeline'
+
+
+class K8sInfra < Thor
+  class_option :verbose, :type => :boolean, :aliases => "-v"
+  class_option :debug, :type => :boolean, :aliases => "-d"
+  class_option :quiet, :type => :boolean, :aliases => "-q"
+
+  #class_option "cross-cloud-config", :type => :string
+  #class_option "integration", :enum => %w{onap test}
+  #class_option "release-type", :enum => %w{stable head master}, :required => true
+
+  attr_accessor :logger, :config_location, :pipeline, :hosts
+
+  def initialize(*args)
+    # TODO: add options for enable/disable output. eg. https://gist.github.com/guyhughes/ea9ae37dfe12ee3c7292
+    @logger = Logger.new(STDOUT)
+    #@logger.level = Logger::DEBUG
+
+    r = super *args
+		if options[:debug]
+			@logger.level = Logger::DEBUG
+			@logger.info("Logger level set to DEBUG")
+		elsif options[:verbose]
+			@logger.level = Logger::INFO
+			@logger.info("Logger level set to INFO")
+		elsif options[:quiet]
+			@logger.level = Logger::ERROR
+			@logger.info("Logger level set to ERROR")
+		else
+			@logger.level = Logger::WARN
+			@logger.info("Logger level defaulting to WARN")
+		end
+
+		r
+  end
+
+  desc "generate_config <[--hosts-file=HOSTS_FILE] or [--worker-hosts=<IP1,...,IPN>] [--master-hosts=<IP1,...,IPN>]> --arch=<K8s machine architecture> --host-type=<bare|virtual> --release-type=<stable|head> [--output=OUTPUT_FILE]", "Generate cluster configuration using provided options"
+  long_desc <<-LONGDESC
+    Generates the configuration file for the K8s provisioning command.
+
+    --output specifies a file to save the config file ot otherwise it's printed to standard output
+
+    --hosts-file specifies the file to read the master and worker host ips from
+
+    --worker-hosts specifies a comma separated list of IPS for K8s worker nodes
+
+    --master-hosts specifies a comma separated list of IPS for K8s master nodes
+
+    --release-type specifies using a K8s "stable" or "head" release (latest of each is dynamically determined)
+
+    --arch specifies a supported K8s machine architecture to use (eg. arm64, amd64).
+
+    --host-type specifies install K8s directly on a host with "bare" or running the nodes in containers (eg. kind) on a single host with "virtual"
+  LONGDESC
+  option "output", :type => :string, :aliases => "-o"
+  option "hosts-file", :type => :string
+  option "worker-hosts", :type => :string
+  option "master-hosts", :type => :string
+  option "arch", :type => :string, :default => "amd64"
+  option "release-type", :type => :string, :default => "stable"
+  option "host-type", :type => :string, :default => "bare"
+  def generate_config
+    @logger.info "Generating config for K8s #{options['release-type']} #{options['arch']} with #{options['host-type']} host nodes"
+
+    unless options['hosts-file'] or (options['worker-hosts'] and options['master-hosts'])
+      @logger.debug "hosts file '#{options['hosts-file']}'"
+      @logger.debug "worker hosts '#{options['worker-hosts']}'"
+      @logger.debug "master hosts '#{options['master-hosts']}'"
+
+
+      #@logger.error "No hosts or hosts file specified"
+      puts "No hosts or hosts file specified -- See help generate_config command"
+      exit 1
+      #invoke :help, ["generate_config"]
+    end
+
+
+    # hosts in file
+    # TODO: Check that file is available otherwise show an error message and exit.
+
+    if options['hosts-file']
+      @hosts = load_hosts_file(options['hosts-file'])
+    # TODO: Parse hosts file if hosts-file option is given
+    else
+      # hosts as arguments
+      # TODO: parse comma separated lits of hosts if worker and master hosts are specified as arguments
+
+      puts "TBD: parse worker and master host args"
+    end
+    
+    unless options['output']
+      @logger.debug "output file '#{options['output']}'"
+
+      #@logger.error "No output file specified"
+      puts "No output file specified -- See help generate_config command"
+      exit 1
+      #invoke :help, ["generate_config"]
+    end
+
+
+    # TODO: Call method to find k8s release based on arch and release type
+
+    # TODO: read the release urls from a configuration file
+    stable_release_url="https://storage.googleapis.com/kubernetes-release/release/stable.txt"
+    head_release_url="https://storage.googleapis.com/kubernetes-release-dev/ci-cross/latest.txt"
+    
+
+    release_url = case options['release-type']
+    when "stable"
+      "#{stable_release_url}"
+    when "head"
+      "#{head_release_url}"
+    else
+      puts "Release type #{options['release-type']} unknown!"
+      exit 1
+    end
+
+    # TODO: HTTP request to release url for release
+    # k8s_release = HttpDownload(release_url).body
+
+    response = Faraday.get release_url
+    if response.body.nil?
+      @logger.error "Failed to download release for #{options['release-type']}"
+      return
+    end
+
+    kubernetes_release = "#{response.body}"
+
+    config = ERB.new(get_template("#{options['arch']}", "#{options['host-type']}", "#{kubernetes_release}"), nil, '-')
+    File.open("#{options['output']}", 'w') do |f| 
+      f.write config.result(binding)
+    end
+  end
+
+  # desc "create_pinnings <project_name>", "Create pinnings configuration for project and release type"
+  # long_desc <<-LONGDESC
+  #   Creates a pinning configuration for the specified project and release type
+
+  #   --release-type specifies either stable or head (actual version is determined internally)
+  #   --integration can be used to specifiy an external CI integration
+  #   --pinning-config specifies the path and name of the configuration created
+  # LONGDESC
+  # option "pinning-config", :type => :string, :default => "release.env"
+  # def create_pinnings(project_name)
+  #   @logger.info "INTEGRATION: #{options["integration"]}" if options["integration"]
+  #   @logger.info "Creating pinning configuration for #{options["release-type"]} #{project_name} build artifacts"
+
+  #   opts = {
+  #     config_location: config_location,
+  #     project_name: project_name,
+  #     release_type: options["release-type"],
+  #     integration: options["integration"]
+  #   }
+  #   opts.merge! options
+
+  #   pipeline = build_pipeline(opts)
+
+  #   #TODO: support file creation
+  #   #pipeline.create_pinning_config(option["pinning-config"])
+  #   puts pipeline.create_pinning_config
+  # end
+
+  # map "create_pinning_config" => "create_pinnings"
+
+  # desc "delete_container <project_name>", "Delete local cached container for a project"
+  # long_desc <<-LONGDESC
+  #   Deletes a local container image from the cache
+
+  #   --release-type specifies either stable or head (actual version is determined internally)
+  #   --integration can be used to specifiy an external CI integration
+  # LONGDESC
+  # def delete_container(project_name)
+  #   puts "INTEGRATION: #{options["integration"]}" if options["integration"]
+  #   puts "Deleting container image from cache for #{options["release_type"]} #{project_name}"
+  # end
+
+
+  # desc "build_status <project_name>", "Retrieve and show the build status"
+  # long_desc <<-LONGDESC
+  #   Retrieves the last build status
+
+  #   --release-type specifies either stable or head (actual version is determined internally)
+  #   --integration can be used to specifiy an external CI integration
+  # LONGDESC
+  # def build_status(project_name)
+  #   @logger.info "INTEGRATION: #{options["integration"]}" if options["integration"]
+  #   @logger.info "Retrieving the build status for #{options["release-type"]} #{project_name}"
+
+  #   opts = {
+  #     config_location: config_location,
+  #     project_name: project_name,
+  #     release_type: options["release-type"],
+  #     integration: options["integration"]
+  #   }
+  #   opts.merge! options
+
+  #   pipeline = build_pipeline(opts)
+
+  #   begin
+  #     status = pipeline.build_status
+  #   rescue CrossCloudCi::CiService::BuildPipeline::UnsupportedRelease
+  #     status = "n/a"
+  #   end
+
+  #   #@logger.info "Build status: #{status}"
+  #   puts "Build status: #{status}"
+  # end
+
+  private
+
+  def get_template (arch,type,kubernetes_release)
+  %{
+k8s_infra:
+  arch: <%= "#{arch}" %>
+  host_type: <%= "#{type}" %>
+  k8s_release: <%= "#{kubernetes_release}" -%>
+  nodes:
+    <% for @host in @hosts['nodes'] -%>- addr: <%= @host['addr'] %>
+      role: <%= @host['role'] %>
+    <% end %>
+  }
+  end
+
+
+  def load_hosts_file(hostsfile)
+    unless File.exists?(hostsfile)
+      puts "Hosts file not found '#{hostsfile}'"
+      exit 1
+    end
+
+    begin
+      YAML.load_file(hostsfile)
+    rescue Psych::SyntaxError => e
+      #@logger.error "Hosts file #{options['hosts-file']} has syntax errors"
+      puts "Hosts file #{hostsfile} has syntax errors"
+      puts e
+      exit 1
+    end
+  end
+  # private
+
+  # def config_location
+  #   if options["cross-cloud-config"]
+  #     @config_location = options["cross-cloud-config"]
+  #   elsif ENV["CROSS_CLOUD_YML"]
+  #     @config_location = ENV["CROSS_CLOUD_YML"] 
+  #   else
+  #     @config_location = @@DEFAULT_CROSSCLOUD_CONFIG
+  #   end
+  #   @config_location
+  # end
+
+  # def build_pipeline(opts)
+  #   # TODO: Raise error if project not found in config (here or in lib)
+  #   begin 
+  #     #@pipeline = CrossCloudCi::CiService::Onap::BuildPipeline.new(opts)
+	# 		#@pipeline = CrossCloudCi::CiService::BuildPipeline.new(opts)
+  #     @pipeline = CrossCloudCi::CiService.build_pipeline(opts)
+  #   rescue CrossCloudCi::CiService::BuildPipeline::MissingProjectConfig
+  #     @logger.error "Failed to find configuration for project '#{opts['project_name']}' in #{opts['config_location']}"
+  #     exit 1
+  #   end
+
+  #   @pipeline.logger.level = @logger.level
+  #   @pipeline
+  # end
+end
+
+K8sInfra.start(ARGV)
+
+exit 0
