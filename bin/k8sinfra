@@ -102,14 +102,14 @@ class K8sInfra < Thor
       puts "TBD: parse worker and master host args"
     end
     
-    unless options['output']
-      @logger.debug "output file '#{options['output']}'"
-
-      #@logger.error "No output file specified"
-      puts "No output file specified -- See help generate_config command"
-      exit 1
-      #invoke :help, ["generate_config"]
-    end
+    # unless options['output']
+    #   @logger.debug "output file '#{options['output']}'"
+    #
+    #   #@logger.error "No output file specified"
+    #   puts "No output file specified -- See help generate_config command"
+    #   exit 1
+    #   #invoke :help, ["generate_config"]
+    # end
 
 
     # TODO: Call method to find k8s release based on arch and release type
@@ -141,8 +141,12 @@ class K8sInfra < Thor
     kubernetes_release = "#{response.body}"
 
     config = ERB.new(get_template("#{options['arch']}", "#{options['host-type']}", "#{kubernetes_release}"), nil, '-')
-    File.open("#{options['output']}", 'w') do |f| 
-      f.write config.result(binding)
+    if options['output'] then
+      File.open("#{options['output']}", 'w') do |f| 
+        f.write config.result(binding)
+      end
+    else
+      puts config.result(binding)
     end
   end
 
@@ -229,9 +233,9 @@ k8s_infra:
   host_type: <%= "#{type}" %>
   k8s_release: <%= "#{kubernetes_release}" -%>
   nodes:
-    <% for @host in @hosts['nodes'] -%>- addr: <%= @host['addr'] %>
+    <%for @host in @hosts['nodes'] -%>- addr: <%= @host['addr'] %>
       role: <%= @host['role'] %>
-    <% end %>
+    <%end rescue puts "Hosts file has structure errors " %>
   }
   end
 

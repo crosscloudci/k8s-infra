@@ -17,7 +17,6 @@ describe "bin/k8sinfra", :type => :aruba, :exit_timeout => 180 do
     expect(last_command_started).to have_output /help/
   end
 
-
   it "generate_config prints a an error and help message then exits with a 0 status if invalid arguments are given" do
     # run("pwd")
     #run(cmd)
@@ -27,19 +26,41 @@ describe "bin/k8sinfra", :type => :aruba, :exit_timeout => 180 do
     expect(last_command_started).to have_output /ERROR: "k8sinfra generate_config" was called with arguments/
   end
 
-
-  xit "generate_config will exit with an error if the hosts file has invalid syntax" do
+  it "generate_config will exit with an error if the hosts file has invalid syntax" do
     # run("pwd")
     #run(cmd)
-    cmd_with_args = "#{cmd} generate_config --hosts-file=example_hosts-invalid_syntax.yaml"
+    cmd_with_args = "#{cmd} generate_config --hosts-file=../../example_hosts-invalid_syntax.yml -o /tmp/test.yml"
     puts "Running command: #{cmd_with_args}"
     run_command(cmd_with_args)
     expect(last_command_started).to have_output /has syntax errors/
   end
 
+  it "generate_config will exit with an error if the hosts file has invalid structure" do
+    # run("pwd")
+    #run(cmd)
+    cmd_with_args = "#{cmd} generate_config --hosts-file=../../example_hosts-invalid_structure.yml -o /tmp/test.yml"
+    puts "Running command: #{cmd_with_args}"
+    run_command(cmd_with_args)
+    expect(last_command_started).to have_output /Hosts file has structure errors/
+  end
 
+  it "generate_config will valid output without -o" do
+    # run("pwd")
+    #run(cmd)
+    cmd_with_args = "#{cmd} generate_config --hosts-file=../../spec/bin/example_hosts.yml"
+    puts "Running command: #{cmd_with_args}"
+    run_command(cmd_with_args)
+    expect(last_command_started).to have_output /nodes/
+  end
 
-
+  # it "generate_config will test.yml with syntax" do
+  #   # run("pwd")
+  #   #run(cmd)
+  #   cmd_with_args = "#{cmd} generate_config --hosts-file=example_hosts.yml"
+  #   puts "Running command: #{cmd_with_args}"
+  #   run_command(cmd_with_args)
+  #   expect(last_command_started).to have_output /has syntax errors/
+  # end
 
 
   # describe "download_container()" do
