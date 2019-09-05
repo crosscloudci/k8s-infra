@@ -60,6 +60,8 @@ class K8sInfra < Thor
 
     --master-hosts specifies a comma separated list of IPS for K8s master nodes
 
+    --infra-job specifies the id of a job to read to master and worker host ips from
+
     --release-type specifies using a K8s "stable" or "head" release (latest of each is dynamically determined)
 
     --arch specifies a supported K8s machine architecture to use (eg. arm64, amd64).
@@ -67,6 +69,7 @@ class K8sInfra < Thor
     --host-type specifies install K8s directly on a host with "bare" or running the nodes in containers (eg. kind) on a single host with "virtual"
   LONGDESC
   option "output", :type => :string, :aliases => "-o"
+  option "infra-job", :type => :string
   option "hosts-file", :type => :string
   option "worker-hosts", :type => :string
   option "master-hosts", :type => :string
@@ -76,14 +79,15 @@ class K8sInfra < Thor
   def generate_config
     @logger.info "Generating config for K8s #{options['release-type']} #{options['arch']} with #{options['host-type']} host nodes"
 
-    unless options['hosts-file'] or (options['worker-hosts'] and options['master-hosts'])
+    unless (options['hosts-file'] || (options['worker-hosts'] && options['master-hosts']) || options['infra-job'])
       @logger.debug "hosts file '#{options['hosts-file']}'"
       @logger.debug "worker hosts '#{options['worker-hosts']}'"
       @logger.debug "master hosts '#{options['master-hosts']}'"
+      @logger.debug "infra job '#{options['infra-job']}'"
 
 
-      #@logger.error "No hosts or hosts file specified"
-      puts "No hosts or hosts file specified -- See help generate_config command"
+      #@logger.error "No hosts or (master and worker node ips) or infra-job id specified"
+      puts "No node ips, hosts file, or job specified -- See help generate_config command"
       exit 1
       #invoke :help, ["generate_config"]
     end
@@ -95,6 +99,20 @@ class K8sInfra < Thor
     if options['hosts-file']
       @hosts = load_hosts_file(options['hosts-file'])
     # TODO: Parse hosts file if hosts-file option is given
+    elsif options['infra-job']
+      @hosts = get_hosts(options['infra-job'])
+      @logger.debug "Infra-job: #{options['infra-job']}"
+      @logger.debug  "hosts: #{@hosts}"
+    elsif (options['worker-hosts'] && options['master-hosts'])
+      worker_arr = options['worker-hosts'].split(",")
+      worker_hashes = worker_arr.map{|x| {"addr" => x, "role" => "worker"}} 
+      master_arr = options['master-hosts'].split(",")
+      master_hashes = master_arr.map{|x| {"addr" => x, "role" => "master"}} 
+      # @hosts = get_hosts(options['infra-job'])
+      @hosts = {"nodes" => master_hashes + worker_hashes} 
+
+      @logger.debug "Infra-job: #{options['infra-job']}"
+      @logger.debug  "hosts: #{@hosts}"
     else
       # hosts as arguments
       # TODO: parse comma separated lits of hosts if worker and master hosts are specified as arguments
@@ -218,6 +236,7 @@ class K8sInfra < Thor
   #     status = pipeline.build_status
   #   rescue CrossCloudCi::CiService::BuildPipeline::UnsupportedRelease
   #     status = "n/a"
+
   #   end
 
   #   #@logger.info "Build status: #{status}"
@@ -226,6 +245,18 @@ class K8sInfra < Thor
 
   private
 
+  # https://gitlab.cncf.ci/cncf/infra-provisioning/-/jobs/168472/artifacts/raw/terraform/nodes.env
+  def get_hosts (job)
+    base_url = "https://gitlab.cncf.ci"
+    hosts_url = "#{base_url}/cncf/infra-provisioning/-/jobs/#{job}/artifacts/raw/terraform/nodes.env"
+    response = Faraday.get hosts_url
+    if response && response.body.nil? then
+      @logger.error "Failed to download hosts from job #{options['infra-job']}"
+    else
+      YAML.load(response.body)
+    end
+  end
+
   def get_template (arch,type,kubernetes_release)
   %{
 k8s_infra:
@@ -233,8 +264,8 @@ k8s_infra:
   host_type: <%= "#{type}" %>
   k8s_release: <%= "#{kubernetes_release}" -%>
   nodes:
-    <%for @host in @hosts['nodes'] -%>- addr: <%= @host['addr'] %>
-      role: <%= @host['role'] %>
+    <%for x in @hosts['nodes'] -%>- addr: <%= x['addr'] %>
+      role: <%= x['role'] %>
     <%end rescue puts "Hosts file has structure errors " %>
   }
   end
