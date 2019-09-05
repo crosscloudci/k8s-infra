@@ -1,4 +1,5 @@
 require 'spec_helper'
+require 'faraday'
 
 # TODO: Add tests for all arguments and options to build_pipeline
 
@@ -50,7 +51,30 @@ describe "bin/k8sinfra", :type => :aruba, :exit_timeout => 180 do
     cmd_with_args = "#{cmd} generate_config --hosts-file=../../spec/bin/example_hosts.yml"
     puts "Running command: #{cmd_with_args}"
     run_command(cmd_with_args)
-    expect(last_command_started).to have_output /nodes/
+    expect(last_command_started).to have_output /master/
+    expect(last_command_started).to have_output /worker/
+    expect(last_command_started).to have_output /amd64/
+    expect(last_command_started).to have_output /amd64/
+    expect(last_command_started).to have_output /v1.15.3/
+  end
+
+  it "generate_config --infra-job should pull down the nodes yml from the job" do
+    # run("pwd")
+    #run(cmd)
+    cmd_with_args = "#{cmd} generate_config --infra-job=168517"
+    puts "Running command: #{cmd_with_args}"
+    run_command(cmd_with_args)
+    expect(last_command_started).to have_output /139.178.68.121/
+  end
+
+  it "generate_config --master-hosts and --worker-hosts pull ips from the cli" do
+    # run("pwd")
+    #run(cmd)
+    cmd_with_args = "#{cmd} generate_config --master-hosts='1.1.1.1,2.2.2.2,3.3.3.3' --worker-hosts='4.4.4.4,5.5.5.5,6.6.6.6'"
+    puts "Running command: #{cmd_with_args}"
+    run_command(cmd_with_args)
+    expect(last_command_started).to have_output /6.6.6.6/
+    expect(last_command_started).to have_output /1.1.1.1/
   end
 
   # it "generate_config will test.yml with syntax" do
