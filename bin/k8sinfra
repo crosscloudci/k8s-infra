@@ -26,10 +26,7 @@ class K8sInfra < Thor
   attr_accessor :logger, :config_location, :pipeline, :hosts
 
   def initialize(*args)
-    # TODO: add options for enable/disable output. eg. https://gist.github.com/guyhughes/ea9ae37dfe12ee3c7292
     @logger = Logger.new(STDOUT)
-    #@logger.level = Logger::DEBUG
-
     r = super *args
 		if options[:debug]
 			@logger.level = Logger::DEBUG
@@ -46,6 +43,41 @@ class K8sInfra < Thor
 		end
 
 		r
+  end
+
+  desc "provision_config <[--dry-run] or [--config-file=<your/configfile/with/path>]", "k8s-infra provisioning CLI Tool"
+  long_desc <<-LONGDESC
+     Provisions generates kubespray configuration based on configuration output from terraform.
+
+    --dry-run parse configuration and print what it would have used for provisioning 
+
+    --config-path path to configuration file 
+
+  LONGDESC
+  option "dry-run", :type => :boolean, :aliases => "-r"
+  option "config-file", :type => :string
+  def provision_config
+    @logger.info "Generating provision config for K8s config-file: #{options['config-file']}"
+ ## load file
+
+    unless options['config-file']
+      @logger.debug "config-file '#{options['config-file']}"
+      @logger.debug "dry-run '#{options['dry-run']}"
+
+      puts "No config-file specified -- See help provision_config command"
+      exit 1
+    end
+    @intermediate_hash = YAML.load_file(options['config-file'])
+    @logger.debug "intermediate_hash '#{@intermediate_hash}"
+
+    config = ERB.new(kubespray_template(), nil, '-')
+    if options['dry-run'] then
+      puts config.result(binding)
+    else
+      File.open("#{options['output']}", 'w') do |f| 
+        f.write config.result(binding)
+      end
+    end
   end
 
   desc "generate_config <[--hosts-file=HOSTS_FILE] or [--worker-hosts=<IP1,...,IPN>] [--master-hosts=<IP1,...,IPN>]> --arch=<K8s machine architecture> --host-type=<bare|virtual> --release-type=<stable|head> [--output=OUTPUT_FILE]", "Generate cluster configuration using provided options"
@@ -85,8 +117,6 @@ class K8sInfra < Thor
       @logger.debug "master hosts '#{options['master-hosts']}'"
       @logger.debug "infra job '#{options['infra-job']}'"
 
-
-      #@logger.error "No hosts or (master and worker node ips) or infra-job id specified"
       puts "No node ips, hosts file, or job specified -- See help generate_config command"
       exit 1
       #invoke :help, ["generate_config"]
@@ -108,31 +138,16 @@ class K8sInfra < Thor
       worker_hashes = worker_arr.map{|x| {"addr" => x, "role" => "worker"}} 
       master_arr = options['master-hosts'].split(",")
       master_hashes = master_arr.map{|x| {"addr" => x, "role" => "master"}} 
-      # @hosts = get_hosts(options['infra-job'])
       @hosts = {"nodes" => master_hashes + worker_hashes} 
-
       @logger.debug "Infra-job: #{options['infra-job']}"
       @logger.debug  "hosts: #{@hosts}"
     else
-      # hosts as arguments
-      # TODO: parse comma separated lits of hosts if worker and master hosts are specified as arguments
-
-      puts "TBD: parse worker and master host args"
+      puts "All required options not handled"
     end
     
-    # unless options['output']
-    #   @logger.debug "output file '#{options['output']}'"
-    #
-    #   #@logger.error "No output file specified"
-    #   puts "No output file specified -- See help generate_config command"
-    #   exit 1
-    #   #invoke :help, ["generate_config"]
-    # end
-
 
     # TODO: Call method to find k8s release based on arch and release type
 
-    # TODO: read the release urls from a configuration file
     stable_release_url="https://storage.googleapis.com/kubernetes-release/release/stable.txt"
     head_release_url="https://storage.googleapis.com/kubernetes-release-dev/ci-cross/latest.txt"
     
@@ -147,9 +162,6 @@ class K8sInfra < Thor
       exit 1
     end
 
-    # TODO: HTTP request to release url for release
-    # k8s_release = HttpDownload(release_url).body
-
     response = Faraday.get release_url
     if response.body.nil?
       @logger.error "Failed to download release for #{options['release-type']}"
@@ -158,7 +170,7 @@ class K8sInfra < Thor
 
     kubernetes_release = "#{response.body}"
 
-    config = ERB.new(get_template("#{options['arch']}", "#{options['host-type']}", "#{kubernetes_release}"), nil, '-')
+    config = ERB.new(intermediate_config_template("#{options['arch']}", "#{options['host-type']}", "#{kubernetes_release}"), nil, '-')
     if options['output'] then
       File.open("#{options['output']}", 'w') do |f| 
         f.write config.result(binding)
@@ -167,81 +179,6 @@ class K8sInfra < Thor
       puts config.result(binding)
     end
   end
-
-  # desc "create_pinnings <project_name>", "Create pinnings configuration for project and release type"
-  # long_desc <<-LONGDESC
-  #   Creates a pinning configuration for the specified project and release type
-
-  #   --release-type specifies either stable or head (actual version is determined internally)
-  #   --integration can be used to specifiy an external CI integration
-  #   --pinning-config specifies the path and name of the configuration created
-  # LONGDESC
-  # option "pinning-config", :type => :string, :default => "release.env"
-  # def create_pinnings(project_name)
-  #   @logger.info "INTEGRATION: #{options["integration"]}" if options["integration"]
-  #   @logger.info "Creating pinning configuration for #{options["release-type"]} #{project_name} build artifacts"
-
-  #   opts = {
-  #     config_location: config_location,
-  #     project_name: project_name,
-  #     release_type: options["release-type"],
-  #     integration: options["integration"]
-  #   }
-  #   opts.merge! options
-
-  #   pipeline = build_pipeline(opts)
-
-  #   #TODO: support file creation
-  #   #pipeline.create_pinning_config(option["pinning-config"])
-  #   puts pipeline.create_pinning_config
-  # end
-
-  # map "create_pinning_config" => "create_pinnings"
-
-  # desc "delete_container <project_name>", "Delete local cached container for a project"
-  # long_desc <<-LONGDESC
-  #   Deletes a local container image from the cache
-
-  #   --release-type specifies either stable or head (actual version is determined internally)
-  #   --integration can be used to specifiy an external CI integration
-  # LONGDESC
-  # def delete_container(project_name)
-  #   puts "INTEGRATION: #{options["integration"]}" if options["integration"]
-  #   puts "Deleting container image from cache for #{options["release_type"]} #{project_name}"
-  # end
-
-
-  # desc "build_status <project_name>", "Retrieve and show the build status"
-  # long_desc <<-LONGDESC
-  #   Retrieves the last build status
-
-  #   --release-type specifies either stable or head (actual version is determined internally)
-  #   --integration can be used to specifiy an external CI integration
-  # LONGDESC
-  # def build_status(project_name)
-  #   @logger.info "INTEGRATION: #{options["integration"]}" if options["integration"]
-  #   @logger.info "Retrieving the build status for #{options["release-type"]} #{project_name}"
-
-  #   opts = {
-  #     config_location: config_location,
-  #     project_name: project_name,
-  #     release_type: options["release-type"],
-  #     integration: options["integration"]
-  #   }
-  #   opts.merge! options
-
-  #   pipeline = build_pipeline(opts)
-
-  #   begin
-  #     status = pipeline.build_status
-  #   rescue CrossCloudCi::CiService::BuildPipeline::UnsupportedRelease
-  #     status = "n/a"
-
-  #   end
-
-  #   #@logger.info "Build status: #{status}"
-  #   puts "Build status: #{status}"
-  # end
 
   private
 
@@ -257,7 +194,43 @@ class K8sInfra < Thor
     end
   end
 
-  def get_template (arch,type,kubernetes_release)
+  def kubespray_template
+    %{
+all:
+  vars: 
+     kube_version: <%= @intermediate_hash['k8s_infra']['k8s_release'] %>
+     kubeconfig_localhost=true
+     kubectl_localhost=true
+  hosts:
+    <% @intermediate_hash['k8s_infra']['nodes'].each_with_index do |x, index|  -%>
+node<%=index %>:
+      ansible_host: <%= x['addr'] %>
+      ip: <%= x['addr'] %>
+      access_ip: <%= x['role'] %>
+    <% end  -%>
+  children:
+    kube-master:
+      hosts:
+        node1:
+        node2:
+    kube-node:
+      hosts:
+        node1:
+        node2:
+        node3:
+        node4:
+    etcd:
+      hosts:
+        node1:
+        node2:
+        node3:
+    k8s-cluster:
+      children:
+        kube-master:
+  }
+  end
+
+  def intermediate_config_template (arch,type,kubernetes_release)
   %{
 k8s_infra:
   arch: <%= "#{arch}" %>
@@ -286,33 +259,6 @@ k8s_infra:
       exit 1
     end
   end
-  # private
-
-  # def config_location
-  #   if options["cross-cloud-config"]
-  #     @config_location = options["cross-cloud-config"]
-  #   elsif ENV["CROSS_CLOUD_YML"]
-  #     @config_location = ENV["CROSS_CLOUD_YML"] 
-  #   else
-  #     @config_location = @@DEFAULT_CROSSCLOUD_CONFIG
-  #   end
-  #   @config_location
-  # end
-
-  # def build_pipeline(opts)
-  #   # TODO: Raise error if project not found in config (here or in lib)
-  #   begin 
-  #     #@pipeline = CrossCloudCi::CiService::Onap::BuildPipeline.new(opts)
-	# 		#@pipeline = CrossCloudCi::CiService::BuildPipeline.new(opts)
-  #     @pipeline = CrossCloudCi::CiService.build_pipeline(opts)
-  #   rescue CrossCloudCi::CiService::BuildPipeline::MissingProjectConfig
-  #     @logger.error "Failed to find configuration for project '#{opts['project_name']}' in #{opts['config_location']}"
-  #     exit 1
-  #   end
-
-  #   @pipeline.logger.level = @logger.level
-  #   @pipeline
-  # end
 end
 
 K8sInfra.start(ARGV)
