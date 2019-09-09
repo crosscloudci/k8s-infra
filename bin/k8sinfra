@@ -67,10 +67,10 @@ class K8sInfra < Thor
       puts "No config-file specified -- See help provision_config command"
       exit 1
     end
-    @intermediate_hash = YAML.load_file(options['config-file'])
-    @logger.debug "intermediate_hash '#{@intermediate_hash}"
+    @cluster_hash = YAML.load_file(options['config-file'])
+    @logger.debug "cluster_hash '#{@cluster_hash}"
 
-    config = ERB.new(kubespray_template(), nil, '-')
+    config = ERB.new(generic_dry_run_template(), nil, '-')
     if options['dry-run'] then
       puts config.result(binding)
     else
@@ -170,7 +170,7 @@ class K8sInfra < Thor
 
     kubernetes_release = "#{response.body}"
 
-    config = ERB.new(intermediate_config_template("#{options['arch']}", "#{options['host-type']}", "#{kubernetes_release}"), nil, '-')
+    config = ERB.new(cluster_config_template("#{options['arch']}", "#{options['host-type']}", "#{kubernetes_release}"), nil, '-')
     if options['output'] then
       File.open("#{options['output']}", 'w') do |f| 
         f.write config.result(binding)
@@ -194,15 +194,28 @@ class K8sInfra < Thor
     end
   end
 
+  def generic_dry_run_template
+    %{
+all:
+     kube_version: <%= @cluster_hash['k8s_infra']['k8s_release'] %>
+  hosts:
+    <% @cluster_hash['k8s_infra']['nodes'].each_with_index do |x, index|  -%>
+node<%=index %>:
+      ip: <%= x['addr'] %>
+      role: <%= x['role'] %>
+    <% end  -%>
+  }
+  end
+
   def kubespray_template
     %{
 all:
   vars: 
-     kube_version: <%= @intermediate_hash['k8s_infra']['k8s_release'] %>
+     kube_version: <%= @cluster_hash['k8s_infra']['k8s_release'] %>
      kubeconfig_localhost=true
      kubectl_localhost=true
   hosts:
-    <% @intermediate_hash['k8s_infra']['nodes'].each_with_index do |x, index|  -%>
+    <% @cluster_hash['k8s_infra']['nodes'].each_with_index do |x, index|  -%>
 node<%=index %>:
       ansible_host: <%= x['addr'] %>
       ip: <%= x['addr'] %>
@@ -230,7 +243,7 @@ node<%=index %>:
   }
   end
 
-  def intermediate_config_template (arch,type,kubernetes_release)
+  def cluster_config_template (arch,type,kubernetes_release)
   %{
 k8s_infra:
   arch: <%= "#{arch}" %>
