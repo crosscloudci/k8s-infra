@@ -76,20 +76,20 @@ describe "bin/k8sinfra", :type => :aruba, :exit_timeout => 180 do
   end
 
   it "provision_config config-file is required" do
-    cmd_with_args = "#{cmd} provision_config --summary"
+    cmd_with_args = "#{cmd} provision_config --dry-run"
     puts "Running command: #{cmd_with_args}"
     run_command(cmd_with_args)
     expect(last_command_started).to have_output /No config-file specified/
   end
 
-  it "provision_config will show valid output with --summary" do
+  it "provision_config will show valid output with --dry-run" do
     #create a cluster config file
     cmd_with_args = "#{cmd} generate_config --master-hosts='1.1.1.1,2.2.2.2,3.3.3.3' --worker-hosts='4.4.4.4,5.5.5.5,6.6.6.6' -o /tmp/fulltest.yml"
     puts "Running command: #{cmd_with_args}"
     run_command(cmd_with_args)
     sleep(5)
     stop_all_commands
-    cmd_with_args = "#{cmd} provision_config --config-file '/tmp/fulltest.yml' --summary"
+    cmd_with_args = "#{cmd} provision_config --config-file '/tmp/fulltest.yml' --dry-run"
     puts "Running command: #{cmd_with_args}"
     run_command(cmd_with_args)
     expect(last_command_started).to have_output /ip/
@@ -97,14 +97,14 @@ describe "bin/k8sinfra", :type => :aruba, :exit_timeout => 180 do
     expect(last_command_started).to have_output /role/
   end
 
-  # it "provision_config --kubespray will show valid output with --summary" do
+  # it "provision_config --kubespray will show valid output with --dry-run" do
   #   #create a cluster config file
   #   cmd_with_args = "#{cmd} generate_config --master-hosts='1.1.1.1,2.2.2.2,3.3.3.3' --worker-hosts='4.4.4.4,5.5.5.5,6.6.6.6' -o /tmp/fulltest.yml"
   #   puts "Running command: #{cmd_with_args}"
   #   run_command(cmd_with_args)
   #   sleep(5)
   #   stop_all_commands
-  #   cmd_with_args = "#{cmd} provision_config --config-file '/tmp/fulltest.yml' --kubespray --summary"
+  #   cmd_with_args = "#{cmd} provision_config --config-file '/tmp/fulltest.yml' --kubespray --dry-run"
   #   puts "Running command: #{cmd_with_args}"
   #   run_command(cmd_with_args)
   #   expect(last_command_started).to have_output /ansible_host/
