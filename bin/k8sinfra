@@ -197,11 +197,13 @@ class K8sInfra < Thor
   def generic_dry_run_template
     %{
 all:
-     kube_version: <%= @cluster_hash['k8s_infra']['k8s_release'] %>
-  hosts:
+     Kubernetes: <%= @cluster_hash['k8s_infra']['k8s_release'] %>
+     Architecture: <%= @cluster_hash["k8s_infra"]["arch"] %>
+     Masters: <%= @cluster_hash["k8s_infra"]["nodes"].find_all{|x| x["role"] == "master"}.count %>
+     Workers: <%= @cluster_hash["k8s_infra"]["nodes"].find_all{|x| x["role"] == "master"}.count %>
+  Nodes:
     <% @cluster_hash['k8s_infra']['nodes'].each_with_index do |x, index|  -%>
-node<%=index %>:
-      ip: <%= x['addr'] %>
+  ip: <%= x['addr'] %>
       role: <%= x['role'] %>
     <% end  -%>
   }
