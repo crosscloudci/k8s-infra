@@ -178,8 +178,13 @@ class K8sInfra < Thor
 
     config = ERB.new(cluster_config_template("#{options['arch']}", "#{options['host-type']}", "#{kubernetes_release}"), nil, '-')
     if options['output'] then
-      File.open("#{options['output']}", 'w') do |f| 
-        f.write config.result(binding)
+      if File.exist?(options['output']) then
+        puts "#{options['output']} already exists"
+        exit 1
+      else
+        File.open("#{options['output']}", "w") do |f| 
+          f.write config.result(binding)
+        end
       end
     else
       puts config.result(binding)

@@ -10,8 +10,6 @@ describe "bin/k8sinfra", :type => :aruba, :exit_timeout => 180 do
   let(:cmd) { 'bin/k8sinfra' }
 
   it "prints a help message and exits with a 0 status if no arguments are given" do
-    # run("pwd")
-    #run(cmd)
     run_command(cmd)
     # expect(last_command_started).to be_successfully_executed 
     expect(last_command_started).to have_output /generate_config/
@@ -19,17 +17,31 @@ describe "bin/k8sinfra", :type => :aruba, :exit_timeout => 180 do
   end
 
   it "generate_config prints a an error and help message then exits with a 0 status if invalid arguments are given" do
-    # run("pwd")
-    #run(cmd)
     cmd_with_args = "#{cmd} generate_config --invalid-option"
     puts "Running command: #{cmd_with_args}"
     run_command(cmd_with_args)
     expect(last_command_started).to have_output /ERROR: "k8sinfra generate_config" was called with arguments/
   end
 
+  it "generate_config will exit with an error if the cluster file already exists" do
+    cmd_with_args = "rm /tmp/test.yml"
+    run_command(cmd_with_args)
+    sleep(2)
+    stop_all_commands
+    cmd_with_args = "#{cmd} generate_config --hosts-file=../../spec/bin/example_hosts.yml -o /tmp/test.yml"
+    run_command(cmd_with_args)
+    sleep(2)
+    stop_all_commands
+    cmd_with_args = "#{cmd} generate_config --hosts-file=../../spec/bin/example_hosts.yml -o /tmp/test.yml"
+    run_command(cmd_with_args)
+    expect(last_command_started).to have_output /already exists/
+  end
+
   it "generate_config will exit with an error if the hosts file has invalid syntax" do
-    # run("pwd")
-    #run(cmd)
+    cmd_with_args = "rm /tmp/test.yml"
+    run_command(cmd_with_args)
+    sleep(2)
+    stop_all_commands
     cmd_with_args = "#{cmd} generate_config --hosts-file=../../example_hosts-invalid_syntax.yml -o /tmp/test.yml"
     puts "Running command: #{cmd_with_args}"
     run_command(cmd_with_args)
@@ -37,8 +49,9 @@ describe "bin/k8sinfra", :type => :aruba, :exit_timeout => 180 do
   end
 
   it "generate_config will exit with an error if the hosts file has invalid structure" do
-    # run("pwd")
-    #run(cmd)
+    cmd_with_args = "rm /tmp/test.yml"
+    run_command(cmd_with_args)
+    sleep(2)
     cmd_with_args = "#{cmd} generate_config --hosts-file=../../example_hosts-invalid_structure.yml -o /tmp/test.yml"
     puts "Running command: #{cmd_with_args}"
     run_command(cmd_with_args)
@@ -46,8 +59,6 @@ describe "bin/k8sinfra", :type => :aruba, :exit_timeout => 180 do
   end
 
   it "generate_config will show valid output without -o" do
-    # run("pwd")
-    #run(cmd)
     cmd_with_args = "#{cmd} generate_config --hosts-file=../../spec/bin/example_hosts.yml"
     puts "Running command: #{cmd_with_args}"
     run_command(cmd_with_args)
@@ -59,8 +70,6 @@ describe "bin/k8sinfra", :type => :aruba, :exit_timeout => 180 do
   end
 
   it "generate_config --infra-job should pull down the nodes yml from the job" do
-    # run("pwd")
-    #run(cmd)
     cmd_with_args = "#{cmd} generate_config --infra-job=168517"
     puts "Running command: #{cmd_with_args}"
     run_command(cmd_with_args)
@@ -76,8 +85,6 @@ describe "bin/k8sinfra", :type => :aruba, :exit_timeout => 180 do
   end
 
   it "provision will exit with an error if the hosts file has invalid syntax" do
-    # run("pwd")
-    #run(cmd)
     cmd_with_args = "#{cmd} provision --config-file=../../example_hosts-invalid_syntax.yml"
     puts "Running command: #{cmd_with_args}"
     run_command(cmd_with_args)
@@ -85,8 +92,6 @@ describe "bin/k8sinfra", :type => :aruba, :exit_timeout => 180 do
   end
 
   it "provision will exit with an error if the hosts file has invalid structure" do
-    # run("pwd")
-    #run(cmd)
     cmd_with_args = "#{cmd} provision --config-file=../../example_hosts-invalid_structure.yml"
     puts "Running command: #{cmd_with_args}"
     run_command(cmd_with_args)
@@ -102,6 +107,10 @@ describe "bin/k8sinfra", :type => :aruba, :exit_timeout => 180 do
 
   it "provision will show valid output with --dry-run" do
     #create a cluster config file
+    cmd_with_args = "rm /tmp/fulltest.yml"
+    run_command(cmd_with_args)
+    sleep(2)
+    stop_all_commands
     cmd_with_args = "#{cmd} generate_config --master-hosts='1.1.1.1,2.2.2.2,3.3.3.3' --worker-hosts='4.4.4.4,5.5.5.5,6.6.6.6' -o /tmp/fulltest.yml"
     puts "Running command: #{cmd_with_args}"
     run_command(cmd_with_args)
