@@ -54,8 +54,8 @@ K8s-Infra
  docker run -ti crosscloudci/k8s-infra:latest k8s-infra/bin/k8sinfra generate_config --master-hosts "1.1.1.1,2.2.2.2,3.3.3.3" --worker-hosts "3.3.3.3,4.4.4.4,5.5.5.5" 
 ```
 
-### Test manually adding ip addresses with generated cluster yml and provision_config generation
+### Test manually adding ip addresses with generated cluster yml and provision generation
 ```
  docker run -ti crosscloudci/k8s-infra:latest /bin/bash -c "k8s-infra/bin/k8sinfra generate_config --master-hosts "1.1.1.1,2.2.2.2,3.3.3.3" --worker-hosts "3.3.3.3,4.4.4.4,5.5.5.5" -o /tmp/test.yml; \
- k8s-infra/bin/k8sinfra provision_config --config-file '/tmp/test.yml' --dry-run"  
+ k8s-infra/bin/k8sinfra provision --config-file '/tmp/test.yml' --dry-run"  
 ```
