@@ -67,17 +67,23 @@ class K8sInfra < Thor
       puts "No config-file specified -- See help provision command"
       exit 1
     end
-    @cluster_hash = YAML.load_file(options['config-file'])
+    @cluster_hash = load_cluster_file(options['config-file'])
     @logger.debug "cluster_hash '#{@cluster_hash}"
-
-    config = ERB.new(generic_dry_run_template(), nil, '-')
-    if options['dry-run'] then
-      puts config.result(binding)
-    else
-      File.open("#{options['output']}", 'w') do |f| 
-        f.write config.result(binding)
-      end
+		if @cluster_hash['k8s_infra'].nil? || @cluster_hash['k8s_infra']['k8s_release'].nil? ||
+		   @cluster_hash['k8s_infra']['arch'].nil? || 
+			 @cluster_hash['k8s_infra']['nodes'].nil? then 
+			puts "Cluster file has structure errors " 
+			exit 1 
     end
+    config = ERB.new(generic_dry_run_template(), nil, '-')
+		puts config.result(binding)
+    # if options['dry-run'] then
+    #   puts config.result(binding)
+    # else
+    #   File.open("#{options['output']}", 'w') do |f| 
+    #     f.write config.result(binding)
+    #   end
+    # end
   end
 
   desc "generate_config <[--hosts-file=HOSTS_FILE] or [--worker-hosts=<IP1,...,IPN>] [--master-hosts=<IP1,...,IPN>]> --arch=<K8s machine architecture> --host-type=<bare|virtual> --release-type=<stable|head> [--output=OUTPUT_FILE]", "Generate cluster configuration using provided options"
@@ -194,6 +200,14 @@ class K8sInfra < Thor
     end
   end
 
+  def cluster_verify_template
+    %{
+<% @cluster_hash['k8s_infra']['k8s_release']  rescue puts "Cluster file has structure errors "; exit 1  -%>
+<% @cluster_hash['k8s_infra']['arch']   rescue puts "Cluster file has structure errors "  ; exit 1 -%>
+<% @cluster_hash['k8s_infra']['nodes']   rescue puts "Cluster file has structure errors " ; exit 1 -%>
+  }
+  end
+
   def generic_dry_run_template
     %{
 all:
@@ -205,7 +219,7 @@ all:
     <% @cluster_hash['k8s_infra']['nodes'].each_with_index do |x, index|  -%>
   ip: <%= x['addr'] %>
       role: <%= x['role'] %>
-    <% end  -%>
+    <% end -%>
   }
   end
 
@@ -270,6 +284,21 @@ k8s_infra:
     rescue Psych::SyntaxError => e
       #@logger.error "Hosts file #{options['hosts-file']} has syntax errors"
       puts "Hosts file #{hostsfile} has syntax errors"
+      puts e
+      exit 1
+    end
+  end
+  def load_cluster_file(clusterfile)
+    unless File.exists?(clusterfile)
+      puts "Cluster file not found '#{clusterfile}'"
+      exit 1
+    end
+
+    begin
+      YAML.load_file(clusterfile)
+    rescue Psych::SyntaxError => e
+      #@logger.error "Hosts file #{options['hosts-file']} has syntax errors"
+      puts "Cluster file #{clusterfile} has syntax errors"
       puts e
       exit 1
     end

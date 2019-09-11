@@ -75,6 +75,24 @@ describe "bin/k8sinfra", :type => :aruba, :exit_timeout => 180 do
     expect(last_command_started).to have_output /1.1.1.1/
   end
 
+  it "provision will exit with an error if the hosts file has invalid syntax" do
+    # run("pwd")
+    #run(cmd)
+    cmd_with_args = "#{cmd} provision --config-file=../../example_hosts-invalid_syntax.yml"
+    puts "Running command: #{cmd_with_args}"
+    run_command(cmd_with_args)
+    expect(last_command_started).to have_output /has syntax errors/
+  end
+
+  it "provision will exit with an error if the hosts file has invalid structure" do
+    # run("pwd")
+    #run(cmd)
+    cmd_with_args = "#{cmd} provision --config-file=../../example_hosts-invalid_structure.yml"
+    puts "Running command: #{cmd_with_args}"
+    run_command(cmd_with_args)
+    expect(last_command_started).to have_output /Cluster file has structure errors/
+  end
+
   it "provision config-file is required" do
     cmd_with_args = "#{cmd} provision --dry-run"
     puts "Running command: #{cmd_with_args}"
