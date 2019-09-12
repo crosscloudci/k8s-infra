@@ -101,9 +101,9 @@ Saving to a file
 ```
 Error message if cluster.yml structure is not valid
 ```
- docker run -ti crosscloudci/k8s-infra:latest k8s-infra/bin/k8sinfra provision --config-file=k8sinfra/example_hosts-invalid_syntax.yml 
+ docker run -ti crosscloudci/k8s-infra:latest k8s-infra/bin/k8sinfra provision --config-file=k8s-infra/example_hosts-invalid_syntax.yml 
 ```
 Error message if cluster.yml structure is not valid
 ```
- docker run -ti crosscloudci/k8s-infra:latest k8s-infra/bin/k8sinfra provision --config-file=k8sinfra/example_hosts-invalid_structure.yml 
+ docker run -ti crosscloudci/k8s-infra:latest k8s-infra/bin/k8sinfra provision --config-file=k8s-infra/example_hosts-invalid_structure.yml 
 ```
