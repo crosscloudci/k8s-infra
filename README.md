@@ -54,8 +54,56 @@ K8s-Infra
  docker run -ti crosscloudci/k8s-infra:latest k8s-infra/bin/k8sinfra generate_config --master-hosts "1.1.1.1,2.2.2.2,3.3.3.3" --worker-hosts "3.3.3.3,4.4.4.4,5.5.5.5" 
 ```
 
-### Test manually adding ip addresses with generated cluster yml and provision generation
+### Test manually adding ip addresses with generated cluster yml and provision generation with head release type
 ```
- docker run -ti crosscloudci/k8s-infra:latest /bin/bash -c "k8s-infra/bin/k8sinfra generate_config --master-hosts "1.1.1.1,2.2.2.2,3.3.3.3" --worker-hosts "3.3.3.3,4.4.4.4,5.5.5.5" -o /tmp/test.yml; \
+ docker run -ti crosscloudci/k8s-infra:latest /bin/bash -c "k8s-infra/bin/k8sinfra generate_config --release-type=head --master-hosts "1.1.1.1,2.2.2.2,3.3.3.3" --worker-hosts "3.3.3.3,4.4.4.4,5.5.5.5" -o /tmp/test.yml; \
  k8s-infra/bin/k8sinfra provision --config-file '/tmp/test.yml' --dry-run"  
+```
+### Test manually adding ip addresses with generated cluster yml and provision generation with stable release type
+```
+ docker run -ti crosscloudci/k8s-infra:latest /bin/bash -c "k8s-infra/bin/k8sinfra generate_config --release-type=stable --master-hosts "1.1.1.1,2.2.2.2,3.3.3.3" --worker-hosts "3.3.3.3,4.4.4.4,5.5.5.5" -o /tmp/test.yml; \
+ k8s-infra/bin/k8sinfra provision --config-file '/tmp/test.yml' --dry-run"  
+```
+
+### Testing with the gitlab integration
+
+To test with the gitlab integration (to get the source IPs from gitlab instead of manually providing them), 
+you can use one of the following two options:
+
+Pre-req: Successful provision Packet machines using infra-provisioning
+Option 1: use existing pipeline
+
+Go to https://gitlab.cncf.ci/cncf/infra-provisioning/pipelines
+Find a successful pipeline and open the release job.
+Under the artifacts section select browse, then download the nodes.env file under the top-level Terraform directory.
+example url path: https://gitlab.cncf.ci/cncf/infra-provisioning/-/jobs/168517/artifacts/browse/terraform/nodes.env
+Option 2: run new pipeline
+
+Go to https://gitlab.cncf.ci/cncf/infra-provisioning/pipelines
+Select run pipeline, then create a pipeline against the production branch.
+Once the job has finished open the release job.
+Under the artifacts section select browse, then download the nodes.env file under the top-level Terraform directory.
+example url path: https://gitlab.cncf.ci/cncf/infra-provisioning/-/jobs/168517/artifacts/browse/terraform/nodes.env
+
+### Test gitlab integration 
+
+stable
+```
+ docker run -ti crosscloudci/k8s-infra:latest k8s-infra/bin/k8sinfra generate_config --release-type=stable --infra-job=168517 
+```
+head
+```
+ docker run -ti crosscloudci/k8s-infra:latest k8s-infra/bin/k8sinfra generate_config --release-type=head --infra-job=168517 
+```
+Saving to a file
+```
+ docker run -ti crosscloudci/k8s-infra:latest k8s-infra/bin/k8sinfra generate_config --infra-job=168517  -o /tmp/cluster.yml
+```
+Error message if cluster.yml structure is not valid
+```
+ docker run -ti crosscloudci/k8s-infra:latest k8s-infra/bin/k8sinfra provision --config-file=k8sinfra/example_hosts-invalid_syntax.yml 
+```
+Error message if cluster.yml structure is not valid
+```
+ docker run -ti crosscloudci/k8s-infra:latest k8s-infra/bin/k8sinfra provision --config-file=k8sinfra/example_hosts-invalid_structure.yml 
 ```
