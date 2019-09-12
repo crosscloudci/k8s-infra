@@ -9,6 +9,7 @@ require 'thor'
 require 'yaml'
 require 'faraday'
 require 'erb'
+require_relative './kubespray-integration'
 
 #require 'crosscloudci/ciservice/onap/build_pipeline'
 #require 'crosscloudci/ciservice/build_pipeline'
@@ -45,15 +46,18 @@ class K8sInfra < Thor
 		r
   end
 
-  desc "provision <[--dry-run] or [--config-file=<your/configfile/with/path>]", "k8s-infra provisioning CLI Tool"
+  desc "provision <[--dry-run] or [--config-file=<your/configfile/with/path>] and [--provision-type=<direct or virtual>]", "k8s-infra provisioning CLI Tool"
   long_desc <<-LONGDESC
      Provisions generates kubespray configuration based on configuration output from terraform.
+
+    --provision-type bootstrap kubernetes at the lowest level or insert a layer of virtualization
 
     --dry-run parse configuration and print what it would have used for provisioning 
 
     --config-path path to configuration file 
 
   LONGDESC
+  option "provision-type", :type => :string, :aliases => "-p"
   option "dry-run", :type => :boolean, :aliases => "-r"
   option "config-file", :type => :string
   def provision
@@ -63,6 +67,7 @@ class K8sInfra < Thor
     unless options['config-file']
       @logger.debug "config-file '#{options['config-file']}"
       @logger.debug "dry-run '#{options['dry-run']}"
+      @logger.debug "provision-type '#{options['provision-type']}"
 
       puts "No config-file specified -- See help provision command"
       exit 1
@@ -75,8 +80,14 @@ class K8sInfra < Thor
 			puts "Cluster file has structure errors " 
 			exit 1 
     end
-    config = ERB.new(generic_dry_run_template(), nil, '-')
-		puts config.result(binding)
+    if options["provision-type"]=="direct" then
+      kubespray = Kubespray.new(@cluster_hash)
+      config = ERB.new(kubespray.provision_template(), nil, '-')
+		  puts config.result(binding)
+    else
+      config = ERB.new(generic_dry_run_template(), nil, '-')
+		  puts config.result(binding)
+    end
     # if options['dry-run'] then
     #   puts config.result(binding)
     # else

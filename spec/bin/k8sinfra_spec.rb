@@ -124,22 +124,22 @@ describe "bin/k8sinfra", :type => :aruba, :exit_timeout => 180 do
     expect(last_command_started).to have_output /role/
   end
 
-  # it "provision --kubespray will show valid output with --dry-run" do
-  #   #create a cluster config file
-  #   cmd_with_args = "#{cmd} generate_config --master-hosts='1.1.1.1,2.2.2.2,3.3.3.3' --worker-hosts='4.4.4.4,5.5.5.5,6.6.6.6' -o /tmp/fulltest.yml"
-  #   puts "Running command: #{cmd_with_args}"
-  #   run_command(cmd_with_args)
-  #   sleep(5)
-  #   stop_all_commands
-  #   cmd_with_args = "#{cmd} provision --config-file '/tmp/fulltest.yml' --kubespray --dry-run"
-  #   puts "Running command: #{cmd_with_args}"
-  #   run_command(cmd_with_args)
-  #   expect(last_command_started).to have_output /ansible_host/
-  #   expect(last_command_started).to have_output /ip/
-  #   expect(last_command_started).to have_output /1.1.1.1/
-  #   expect(last_command_started).to have_output /access_ip/
-  #   expect(last_command_started).to have_output /children/
-  #   expect(last_command_started).to have_output /k8s-cluster/
-  # end
+  it "provision --kubespray will show valid output with --dry-run" do
+    #create a cluster config file
+    cmd_with_args = "#{cmd} generate_config --master-hosts='1.1.1.1,2.2.2.2,3.3.3.3' --worker-hosts='4.4.4.4,5.5.5.5,6.6.6.6' -o /tmp/fulltest.yml"
+    puts "Running command: #{cmd_with_args}"
+    run_command(cmd_with_args)
+    sleep(5)
+    stop_all_commands
+    cmd_with_args = "#{cmd} provision --config-file '/tmp/fulltest.yml' --provision-type=direct  --dry-run"
+    puts "Running command: #{cmd_with_args}"
+    run_command(cmd_with_args)
+    expect(last_command_started).to have_output /ansible_host/
+    expect(last_command_started).to have_output /ip/
+    expect(last_command_started).to have_output /1.1.1.1/
+    expect(last_command_started).to have_output /access_ip/
+    expect(last_command_started).to have_output /children/
+    expect(last_command_started).to have_output /k8s-cluster/
+  end
 end
 
