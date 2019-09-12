@@ -1,5 +1,6 @@
 require 'spec_helper'
 require 'faraday'
+require 'yaml'
 
 # TODO: Add tests for all arguments and options to build_pipeline
 
@@ -131,15 +132,19 @@ describe "bin/k8sinfra", :type => :aruba, :exit_timeout => 180 do
     run_command(cmd_with_args)
     sleep(5)
     stop_all_commands
-    cmd_with_args = "#{cmd} provision --config-file '/tmp/fulltest.yml' --provision-type=direct  --dry-run"
+    cmd_with_args = "#{cmd} provision --config-file '/tmp/fulltest.yml' --dry-run"
     puts "Running command: #{cmd_with_args}"
     run_command(cmd_with_args)
-    expect(last_command_started).to have_output /ansible_host/
     expect(last_command_started).to have_output /ip/
     expect(last_command_started).to have_output /1.1.1.1/
-    expect(last_command_started).to have_output /access_ip/
-    expect(last_command_started).to have_output /children/
-    expect(last_command_started).to have_output /k8s-cluster/
+    
+    kubespray_hash = YAML.load_file('/tmp/kubespray-inventory.yml')
+    expect(kubespray_hash["all"]["hosts"]["node0"]["ansible_host"]).to eq("1.1.1.1")
+    # expect(last_command_started).to have_output /ip/
+    # expect(last_command_started).to have_output /1.1.1.1/
+    # expect(last_command_started).to have_output /access_ip/
+    # expect(last_command_started).to have_output /children/
+    # expect(last_command_started).to have_output /k8s-cluster/
   end
 end
 

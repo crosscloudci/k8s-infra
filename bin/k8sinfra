@@ -46,7 +46,7 @@ class K8sInfra < Thor
 		r
   end
 
-  desc "provision <[--dry-run] or [--config-file=<your/configfile/with/path>] and [--provision-type=<direct or virtual>]", "k8s-infra provisioning CLI Tool"
+  desc "provision <[--dry-run] or [--config-file=<your/configfile/with/path>]", "k8s-infra provisioning CLI Tool"
   long_desc <<-LONGDESC
      Provisions generates kubespray configuration based on configuration output from terraform.
 
@@ -57,7 +57,6 @@ class K8sInfra < Thor
     --config-path path to configuration file 
 
   LONGDESC
-  option "provision-type", :type => :string, :aliases => "-p"
   option "dry-run", :type => :boolean, :aliases => "-r"
   option "config-file", :type => :string
   def provision
@@ -67,7 +66,6 @@ class K8sInfra < Thor
     unless options['config-file']
       @logger.debug "config-file '#{options['config-file']}"
       @logger.debug "dry-run '#{options['dry-run']}"
-      @logger.debug "provision-type '#{options['provision-type']}"
 
       puts "No config-file specified -- See help provision command"
       exit 1
@@ -76,15 +74,27 @@ class K8sInfra < Thor
     @logger.debug "cluster_hash '#{@cluster_hash}"
 		if @cluster_hash['k8s_infra'].nil? || @cluster_hash['k8s_infra']['k8s_release'].nil? ||
 		   @cluster_hash['k8s_infra']['arch'].nil? || 
+		   @cluster_hash['k8s_infra']['provision_type'].nil? || 
 			 @cluster_hash['k8s_infra']['nodes'].nil? then 
 			puts "Cluster file has structure errors " 
 			exit 1 
     end
-    if options["provision-type"]=="direct" then
+    if @cluster_hash['k8s_infra']["provision_type"]=="direct" then
+      @logger.debug "provision_type = direct"
       kubespray = Kubespray.new(@cluster_hash)
-      config = ERB.new(kubespray.provision_template(), nil, '-')
+      config = ERB.new(generic_dry_run_template(), nil, '-')
 		  puts config.result(binding)
+      kubespray_config = ERB.new(kubespray.provision_template(), nil, '-')
+      if options['dry-run'] then
+        inventory_file = "/tmp/kubespray-inventory.yml"
+      else
+        inventory_file = "data/kubespray-inventory.yml"
+      end
+      File.open(inventory_file, 'w') do |f| 
+        f.write kubespray_config.result(binding)
+      end
     else
+      @logger.debug "provision_type = not direct"
       config = ERB.new(generic_dry_run_template(), nil, '-')
 		  puts config.result(binding)
     end
@@ -97,7 +107,7 @@ class K8sInfra < Thor
     # end
   end
 
-  desc "generate_config <[--hosts-file=HOSTS_FILE] or [--worker-hosts=<IP1,...,IPN>] [--master-hosts=<IP1,...,IPN>]> --arch=<K8s machine architecture> --host-type=<bare|virtual> --release-type=<stable|head> [--output=OUTPUT_FILE]", "Generate cluster configuration using provided options"
+  desc "generate_config <[--hosts-file=HOSTS_FILE] or [--worker-hosts=<IP1,...,IPN>] [--master-hosts=<IP1,...,IPN>]> --arch=<K8s machine architecture> --provision-type=<direct|virtual> --release-type=<stable|head> [--output=OUTPUT_FILE]", "Generate cluster configuration using provided options"
   long_desc <<-LONGDESC
     Generates the configuration file for the K8s provisioning command.
 
@@ -115,7 +125,7 @@ class K8sInfra < Thor
 
     --arch specifies a supported K8s machine architecture to use (eg. arm64, amd64).
 
-    --host-type specifies install K8s directly on a host with "bare" or running the nodes in containers (eg. kind) on a single host with "virtual"
+    --provision-type specifies install K8s directly on a host with "direct" or running the nodes in containers (eg. kind) on a single host with "virtual"
   LONGDESC
   option "output", :type => :string, :aliases => "-o"
   option "infra-job", :type => :string
@@ -124,9 +134,9 @@ class K8sInfra < Thor
   option "master-hosts", :type => :string
   option "arch", :type => :string, :default => "amd64"
   option "release-type", :type => :string, :default => "stable"
-  option "host-type", :type => :string, :default => "bare"
+  option "provision-type", :type => :string, :default => "direct"
   def generate_config
-    @logger.info "Generating config for K8s #{options['release-type']} #{options['arch']} with #{options['host-type']} host nodes"
+    @logger.info "Generating config for K8s #{options['release-type']} #{options['arch']} with #{options['provision-type']} host nodes"
 
     unless (options['hosts-file'] || (options['worker-hosts'] && options['master-hosts']) || options['infra-job'])
       @logger.debug "hosts file '#{options['hosts-file']}'"
@@ -187,7 +197,7 @@ class K8sInfra < Thor
 
     kubernetes_release = "#{response.body}"
 
-    config = ERB.new(cluster_config_template("#{options['arch']}", "#{options['host-type']}", "#{kubernetes_release}"), nil, '-')
+    config = ERB.new(cluster_config_template("#{options['arch']}", "#{options['provision-type']}", "#{kubernetes_release}"), nil, '-')
     if options['output'] then
       if File.exist?(options['output']) then
         puts "#{options['output']} already exists"
@@ -221,6 +231,7 @@ class K8sInfra < Thor
 <% @cluster_hash['k8s_infra']['k8s_release']  rescue puts "Cluster file has structure errors "; exit 1  -%>
 <% @cluster_hash['k8s_infra']['arch']   rescue puts "Cluster file has structure errors "  ; exit 1 -%>
 <% @cluster_hash['k8s_infra']['nodes']   rescue puts "Cluster file has structure errors " ; exit 1 -%>
+<% @cluster_hash['k8s_infra']['provision_type']   rescue puts "Cluster file has structure errors " ; exit 1 -%>
   }
   end
 
@@ -229,6 +240,7 @@ class K8sInfra < Thor
 all:
      Kubernetes: <%= @cluster_hash['k8s_infra']['k8s_release'] %>
      Architecture: <%= @cluster_hash["k8s_infra"]["arch"] %>
+     Provision_type:: <%= @cluster_hash["k8s_infra"]["provision_type"] %>
      Masters: <%= @cluster_hash["k8s_infra"]["nodes"].find_all{|x| x["role"] == "master"}.count %>
      Workers: <%= @cluster_hash["k8s_infra"]["nodes"].find_all{|x| x["role"] == "master"}.count %>
   Nodes:
@@ -279,7 +291,7 @@ node<%=index %>:
   %{
 k8s_infra:
   arch: <%= "#{arch}" %>
-  host_type: <%= "#{type}" %>
+  provision_type: <%= "#{type}" %>
   k8s_release: <%= "#{kubernetes_release}" -%>
   nodes:
     <%for x in @hosts['nodes'] -%>- addr: <%= x['addr'] %>
