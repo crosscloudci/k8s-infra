@@ -9,6 +9,7 @@ require 'thor'
 require 'yaml'
 require 'faraday'
 require 'erb'
+require 'fileutils'
 require_relative './kubespray-integration'
 
 #require 'crosscloudci/ciservice/onap/build_pipeline'
@@ -81,17 +82,35 @@ class K8sInfra < Thor
     end
     if @cluster_hash['k8s_infra']["provision_type"]=="direct" then
       @logger.debug "provision_type = direct"
+      #TODO move kubespray specific code into kubespray_integration
       kubespray = Kubespray.new(@cluster_hash)
       config = ERB.new(generic_dry_run_template(), nil, '-')
 		  puts config.result(binding)
       kubespray_config = ERB.new(kubespray.provision_template(), nil, '-')
       if options['dry-run'] then
-        inventory_file = "/tmp/kubespray-inventory.yml"
+        inventory_file = "/tmp/hosts.yml"
       else
-        inventory_file = "data/kubespray-inventory.yml"
+        mkdpwd = FileUtils.pwd() 
+        if ENV["RUBY_ENV"]=="test" then
+          puts "env: #{ENV['RUBY_ENV']}"
+          # if FileUtils.pwd() =~ /aruba/ then
+          mkdans = FileUtils.mkdir_p '../../data/mycluster'
+          inventory_file = "../../data/mycluster/hosts.yml"
+        else
+          puts "env: #{ENV['RUBY_ENV']}"
+          FileUtils.mkdir_p 'data/mycluster'
+          inventory_file = "data/mycluster/hosts.yml"
+        end
       end
       File.open(inventory_file, 'w') do |f| 
         f.write kubespray_config.result(binding)
+      end
+      ks = Kubespray.new(@cluster_hash)
+      unless options['dry-run'] then
+        cluster = ks.start_kubespray 
+        if cluster[:exit_code] != 0 then
+          puts "cluster allocation failed"
+        end
       end
     else
       @logger.debug "provision_type = not direct"

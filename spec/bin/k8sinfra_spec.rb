@@ -1,6 +1,7 @@
 require 'spec_helper'
 require 'faraday'
 require 'yaml'
+require './bin/kubespray-integration.rb' 
 
 # TODO: Add tests for all arguments and options to build_pipeline
 
@@ -138,13 +139,29 @@ describe "bin/k8sinfra", :type => :aruba, :exit_timeout => 180 do
     expect(last_command_started).to have_output /ip/
     expect(last_command_started).to have_output /1.1.1.1/
     
-    kubespray_hash = YAML.load_file('/tmp/kubespray-inventory.yml')
+    kubespray_hash = YAML.load_file('/tmp/hosts.yml')
     expect(kubespray_hash["all"]["hosts"]["node0"]["ansible_host"]).to eq("1.1.1.1")
     # expect(last_command_started).to have_output /ip/
     # expect(last_command_started).to have_output /1.1.1.1/
     # expect(last_command_started).to have_output /access_ip/
     # expect(last_command_started).to have_output /children/
     # expect(last_command_started).to have_output /k8s-cluster/
+  end
+  it "start kubespray" do
+    cmd_with_args = "#{cmd} generate_config --master-hosts='1.1.1.1,2.2.2.2,3.3.3.3' --worker-hosts='4.4.4.4,5.5.5.5,6.6.6.6' -o /tmp/fulltest.yml"
+    puts "Running command: #{cmd_with_args}"
+    run_command(cmd_with_args)
+    sleep(2)
+    stop_all_commands
+    cmd_with_args = "#{cmd} provision --config-file '/tmp/fulltest.yml'"
+    puts "Running command: #{cmd_with_args}"
+    run_command(cmd_with_args)
+    sleep(2)
+    puts last_command_started.output
+    cluster_hash = YAML.load_file("data/mycluster/hosts.yml")
+    # ks = Kubespray.new(cluster_hash)
+    # cluster = ks.start_kubespray
+    expect(cluster_hash["all"]["hosts"].nil?).to eq false 
   end
 end
 
