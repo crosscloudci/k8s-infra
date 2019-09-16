@@ -9,7 +9,7 @@ class Kubespray
   def initialize(cluster_hash)
     @cluster_hash = cluster_hash
     if ENV["RUBY_ENV"]=="test" then
-      @logger = Logger.new('../../logs/kubespray.log', 'weekly')
+      @logger = Logger.new('../../logs/kubespray-test.log', 'weekly')
     else
       @logger = Logger.new('logs/kubespray.log', 'weekly')
     end
