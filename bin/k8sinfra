@@ -110,6 +110,8 @@ class K8sInfra < Thor
           inventory_file = "data/mycluster/hosts.yml"
         end
       end
+      full_path = File.expand_path inventory_file 
+      puts "Full hosts file path: #{full_path}"
       File.open(inventory_file, 'w') do |f| 
         f.write kubespray_config.result(binding)
       end

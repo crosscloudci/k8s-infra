@@ -140,6 +140,7 @@ describe "bin/k8sinfra", :type => :aruba, :exit_timeout => 180 do
     cmd_with_args = "#{cmd} provision --config-file '/tmp/fulltest.yml' --dry-run"
     puts "Running command: #{cmd_with_args}"
     run_command(cmd_with_args)
+    expect(last_command_started).to have_output /\/tmp\/hosts.yml/
     expect(last_command_started).to have_output /succeeded/
     expect(last_command_started).to_not have_output /ip/
     expect(last_command_started).to_not have_output /1.1.1.1/
