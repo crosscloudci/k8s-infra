@@ -26,6 +26,7 @@ class Kubespray
       datadir="data/mycluster"
     end
     FileUtils.cp_r(sampledir, datadir)
+    # output = `ansible-playbook -i data/mycluster/hosts.yml --become --become-user=root lib/provisioner/kubespray/kubespray/cluster.yml`
     # output = `ansible-playbook -i #{datadir}/hosts.yml --become --become-user=root #{plugindir}/cluster.yml`
     # puts output
     # stdin, stdout, stderr, wait_thr = Open3.popen3('ansible-playbook', '-i', "#{datadir}/hosts.yml", "--become", "--become-user=root", "#{plugindir}/cluster.yml")
@@ -33,6 +34,15 @@ class Kubespray
     if ENV["RUBY_ENV"] !="test" then # to actually provision using rspec uncomment this
       stdout, stderr, status = Open3.capture3('ansible-playbook', '-i', "#{datadir}/hosts.yml", "--become", "--become-user=root", "#{plugindir}/cluster.yml")
       exitstatus = status.exitstatus
+
+
+
+
+
+
+
+
+
     end
     @logger.info "stderr #{stderr}"
     @logger.info "stdout #{stdout}"
@@ -46,9 +56,10 @@ class Kubespray
 %{
 all:
   vars: 
-     kube_version: <%= @cluster_hash['k8s_infra']['k8s_release'] %>
-     kubeconfig_localhost: true
-     kubectl_localhost: true
+    ansible_ssh_common_args: '-o StrictHostKeyChecking=no'
+    kube_version: <%= @cluster_hash['k8s_infra']['k8s_release'] %>
+    kubeconfig_localhost: true
+    kubectl_localhost: false
   hosts:
     <%- @cluster_hash['k8s_infra']['nodes'].each_with_index do |x, index| -%>
     node<%=index %>:

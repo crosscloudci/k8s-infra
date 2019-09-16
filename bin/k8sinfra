@@ -97,6 +97,7 @@ class K8sInfra < Thor
       kubespray_config = ERB.new(kubespray.provision_template(), nil, '-')
       if options['dry-run'] then
         inventory_file = "/tmp/hosts.yml"
+        kubeconfig_path = "/tmp/admin.conf"
       else
         mkdpwd = FileUtils.pwd() 
         if ENV["RUBY_ENV"]=="test" then
@@ -104,13 +105,17 @@ class K8sInfra < Thor
           # if FileUtils.pwd() =~ /aruba/ then
           mkdans = FileUtils.mkdir_p '../../data/mycluster'
           inventory_file = "../../data/mycluster/hosts.yml"
+          kubeconfig_path = "../../data/mycluster/artifacts/admin.conf"
         else
           puts "env: #{ENV['RUBY_ENV']}"
           FileUtils.mkdir_p 'data/mycluster'
           inventory_file = "data/mycluster/hosts.yml"
+          kubeconfig_path = "data/mycluster/artifacts/admin.conf"
         end
       end
       full_path = File.expand_path inventory_file 
+      full_kubeconfig_path = File.expand_path kubeconfig_path 
+
       puts "Full hosts file path: #{full_path}"
       File.open(inventory_file, 'w') do |f| 
         f.write kubespray_config.result(binding)
@@ -120,6 +125,7 @@ class K8sInfra < Thor
         cluster = ks.start_kubespray 
         if cluster[:exit_code] == 0 then
           puts "Cluster allocation succeeded"
+          puts "KUBECONFIG path: #{full_kubeconfig_path}"
         else
           puts "cluster allocation failed"
         end
@@ -129,13 +135,6 @@ class K8sInfra < Thor
       config = ERB.new(generic_dry_run_template(), nil, '-')
 		  puts config.result(binding)
     end
-    # if options['dry-run'] then
-    #   puts config.result(binding)
-    # else
-    #   File.open("#{options['output']}", 'w') do |f| 
-    #     f.write config.result(binding)
-    #   end
-    # end
   end
 
   desc "generate_config <[--hosts-file=HOSTS_FILE] or [--worker-hosts=<IP1,...,IPN>] [--master-hosts=<IP1,...,IPN>]> --arch=<K8s machine architecture> --provision-type=<direct|virtual> --release-type=<stable|head> [--output=OUTPUT_FILE]", "Generate cluster configuration using provided options"
