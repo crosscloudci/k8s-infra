@@ -111,5 +111,5 @@ Error message if cluster.yml structure is not valid
 Develop with rspec with the installed kubespray dependencies by mapping the k8s-infra directory into the container
 and running rspec spec
 ```
-docker run -v $(pwd):/k8s-infra -v /home/pair/.ssh/id_rsa:/root/.ssh/id_rsa -v $(pwd)/nodes.env:/tmp/nodes.yml -ti kubespray /bin/bash
+docker run -v $(pwd):/k8s-infra -v /home/pair/.ssh/id_rsa:/root/.ssh/id_rsa  -ti kubespray /bin/bash 
 ```

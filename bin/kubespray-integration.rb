@@ -8,7 +8,11 @@ class Kubespray
 
   def initialize(cluster_hash)
     @cluster_hash = cluster_hash
-    @logger = Logger.new(STDOUT)
+    if ENV["RUBY_ENV"]=="test" then
+      @logger = Logger.new('../../logs/kubespray.log', 'weekly')
+    else
+      @logger = Logger.new('logs/kubespray.log', 'weekly')
+    end
   end
   def start_kubespray
     @logger.debug "pwd: #{FileUtils.pwd()}"
@@ -30,10 +34,13 @@ class Kubespray
       stdout, stderr, status = Open3.capture3('ansible-playbook', '-i', "#{datadir}/hosts.yml", "--become", "--become-user=root", "#{plugindir}/cluster.yml")
       exitstatus = status.exitstatus
     end
+    @logger.info "stderr #{stderr}"
+    @logger.info "stdout #{stdout}"
+    @logger.info "status #{exitstatus}"
     puts "stderr #{stderr}"
     puts "stdout #{stdout}"
     puts "status #{exitstatus}"
-    {stdout: stdout, stderr: stderr, exit_code: status.exitstatus}
+    {stdout: stdout, stderr: stderr, exit_code: exitstatus}
   end
   def provision_template
 %{

@@ -57,3 +57,4 @@ data/
 kubectl
 nodes.env
 .#*
+logs/
