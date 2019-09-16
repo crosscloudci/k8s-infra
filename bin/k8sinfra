@@ -47,18 +47,21 @@ class K8sInfra < Thor
 		r
   end
 
-  desc "provision <[--dry-run] or [--config-file=<your/configfile/with/path>]", "k8s-infra provisioning CLI Tool"
+  desc "provision <[--dry-run] or [--config-file=<your/configfile/with/path>] or [--summary]", "k8s-infra provisioning CLI Tool"
   long_desc <<-LONGDESC
-     Provisions generates kubespray configuration based on configuration output from terraform.
+     Provisions generates provisioning tool (e.g. kubespray) configuration based on configuration output from terraform.
 
     --provision-type bootstrap kubernetes at the lowest level or insert a layer of virtualization
 
     --dry-run parse configuration and print what it would have used for provisioning 
 
+    --summary Shows a summary of what is sent to the provisioning tool 
+
     --config-path path to configuration file 
 
   LONGDESC
   option "dry-run", :type => :boolean, :aliases => "-r"
+  option "summary", :type => :boolean, :aliases => "-s"
   option "config-file", :type => :string
   def provision
     @logger.info "Generating provision config for K8s config-file: #{options['config-file']}"
@@ -67,6 +70,7 @@ class K8sInfra < Thor
     unless options['config-file']
       @logger.debug "config-file '#{options['config-file']}"
       @logger.debug "dry-run '#{options['dry-run']}"
+      @logger.debug "summary '#{options['summary']}"
 
       puts "No config-file specified -- See help provision command"
       exit 1
@@ -84,8 +88,12 @@ class K8sInfra < Thor
       @logger.debug "provision_type = direct"
       #TODO move kubespray specific code into kubespray_integration
       kubespray = Kubespray.new(@cluster_hash)
-      config = ERB.new(generic_dry_run_template(), nil, '-')
-		  puts config.result(binding)
+      if options['summary'] then
+        config = ERB.new(generic_dry_run_template(), nil, '-')
+		    puts config.result(binding)
+      else
+		    puts "Cluster config parsing succeeded." 
+      end
       kubespray_config = ERB.new(kubespray.provision_template(), nil, '-')
       if options['dry-run'] then
         inventory_file = "/tmp/hosts.yml"
@@ -108,7 +116,9 @@ class K8sInfra < Thor
       ks = Kubespray.new(@cluster_hash)
       unless options['dry-run'] then
         cluster = ks.start_kubespray 
-        if cluster[:exit_code] != 0 then
+        if cluster[:exit_code] == 0 then
+          puts "Cluster allocation succeeded"
+        else
           puts "cluster allocation failed"
         end
       end

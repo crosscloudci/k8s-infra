@@ -68,7 +68,7 @@ describe "bin/k8sinfra", :type => :aruba, :exit_timeout => 180 do
     expect(last_command_started).to have_output /worker/
     expect(last_command_started).to have_output /amd64/
     expect(last_command_started).to have_output /amd64/
-                                    expect(last_command_started).to have_output /v1.15.3/
+    expect(last_command_started).to have_output /v1.15.3/
   end
 
   it "generate_config --infra-job should pull down the nodes yml from the job" do
@@ -101,13 +101,13 @@ describe "bin/k8sinfra", :type => :aruba, :exit_timeout => 180 do
   end
 
   it "provision config-file is required" do
-    cmd_with_args = "#{cmd} provision --dry-run"
+    cmd_with_args = "#{cmd} provision --dry-run --summary"
     puts "Running command: #{cmd_with_args}"
     run_command(cmd_with_args)
     expect(last_command_started).to have_output /No config-file specified/
   end
 
-  it "provision will show valid output with --dry-run" do
+  it "provision will show valid output with --dry-run --summary" do
     #create a cluster config file
     cmd_with_args = "rm /tmp/fulltest.yml"
     run_command(cmd_with_args)
@@ -118,7 +118,7 @@ describe "bin/k8sinfra", :type => :aruba, :exit_timeout => 180 do
     run_command(cmd_with_args)
     sleep(5)
     stop_all_commands
-    cmd_with_args = "#{cmd} provision --config-file '/tmp/fulltest.yml' --dry-run"
+    cmd_with_args = "#{cmd} provision --config-file '/tmp/fulltest.yml' --dry-run --summary"
     puts "Running command: #{cmd_with_args}"
     run_command(cmd_with_args)
     expect(last_command_started).to have_output /ip/
@@ -126,14 +126,34 @@ describe "bin/k8sinfra", :type => :aruba, :exit_timeout => 180 do
     expect(last_command_started).to have_output /role/
   end
 
-  it "provision --kubespray will show valid output with --dry-run" do
+  it "provision without --summary should only show success and minimal output" do
+    #create a cluster config file
+    cmd_with_args = "rm /tmp/fulltest.yml"
+    run_command(cmd_with_args)
+    sleep(2)
+    stop_all_commands
+    cmd_with_args = "#{cmd} generate_config --master-hosts='1.1.1.1,2.2.2.2,3.3.3.3' --worker-hosts='4.4.4.4,5.5.5.5,6.6.6.6' -o /tmp/fulltest.yml"
+    puts "Running command: #{cmd_with_args}"
+    run_command(cmd_with_args)
+    sleep(2)
+    stop_all_commands
+    cmd_with_args = "#{cmd} provision --config-file '/tmp/fulltest.yml' --dry-run"
+    puts "Running command: #{cmd_with_args}"
+    run_command(cmd_with_args)
+    expect(last_command_started).to have_output /succeeded/
+    expect(last_command_started).to_not have_output /ip/
+    expect(last_command_started).to_not have_output /1.1.1.1/
+    expect(last_command_started).to_not have_output /role/
+  end
+
+  it "provision --kubespray will show valid output with --dry-run --summary" do
     #create a cluster config file
     cmd_with_args = "#{cmd} generate_config --master-hosts='1.1.1.1,2.2.2.2,3.3.3.3' --worker-hosts='4.4.4.4,5.5.5.5,6.6.6.6' -o /tmp/fulltest.yml"
     puts "Running command: #{cmd_with_args}"
     run_command(cmd_with_args)
     sleep(5)
     stop_all_commands
-    cmd_with_args = "#{cmd} provision --config-file '/tmp/fulltest.yml' --dry-run"
+    cmd_with_args = "#{cmd} provision --config-file '/tmp/fulltest.yml' --dry-run --summary"
     puts "Running command: #{cmd_with_args}"
     run_command(cmd_with_args)
     expect(last_command_started).to have_output /ip/
@@ -141,13 +161,8 @@ describe "bin/k8sinfra", :type => :aruba, :exit_timeout => 180 do
     
     kubespray_hash = YAML.load_file('/tmp/hosts.yml')
     expect(kubespray_hash["all"]["hosts"]["node0"]["ansible_host"]).to eq("1.1.1.1")
-    # expect(last_command_started).to have_output /ip/
-    # expect(last_command_started).to have_output /1.1.1.1/
-    # expect(last_command_started).to have_output /access_ip/
-    # expect(last_command_started).to have_output /children/
-    # expect(last_command_started).to have_output /k8s-cluster/
   end
-  it "start kubespray" do
+  it "starts kubespray" do
     cmd_with_args = "#{cmd} generate_config --master-hosts='1.1.1.1,2.2.2.2,3.3.3.3' --worker-hosts='4.4.4.4,5.5.5.5,6.6.6.6' -o /tmp/fulltest.yml"
     puts "Running command: #{cmd_with_args}"
     run_command(cmd_with_args)
