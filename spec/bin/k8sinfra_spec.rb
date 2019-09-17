@@ -173,7 +173,7 @@ describe "bin/k8sinfra", :type => :aruba, :exit_timeout => 180 do
     cmd_with_args = "#{cmd} provision --config-file '/tmp/fulltest.yml'"
     puts "Running command: #{cmd_with_args}"
     run_command(cmd_with_args)
-    sleep(2)
+    sleep(120)
     puts last_command_started.output
     cluster_hash = YAML.load_file("#{DATA_DIR}/hosts.yml")
     # ks = Kubespray.new(cluster_hash)

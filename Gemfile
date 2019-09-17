@@ -3,6 +3,7 @@ ruby '2.6.3'
 
 gem 'thor'
 gem 'faraday'
+gem 'rest-client'
 #gem 'gitlab'
 #gem 'prawn'
 #gem 'json'

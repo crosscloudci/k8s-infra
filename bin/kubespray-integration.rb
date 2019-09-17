@@ -1,6 +1,7 @@
 require 'open3'
 require 'fileutils'
 require 'logger'
+require_relative './k8sutils'
 
 class Kubespray
   #TODO initialize
@@ -41,7 +42,6 @@ class Kubespray
     if ENV["RUBY_ENV"] !="test" then # to actually provision using rspec uncomment this
       command = "ansible-playbook -i #{datadir}/hosts.yml --become --become-user=root #{plugindir}/cluster.yml"
       puts "Running command: #{command}"
-
        Open3.popen3(command) do |stdin, stdout, stderr, wait_thr|
         stdin.close_write
 
@@ -81,6 +81,7 @@ class Kubespray
     end
   {stdout: complete_stdout, stderr: complete_stderr, exit_code: exitstatus}
   end
+
   def provision_template
 %{
 all:
@@ -89,6 +90,10 @@ all:
     kube_version: <%= @cluster_hash['k8s_infra']['k8s_release'] %>
     kubeconfig_localhost: true
     kubectl_localhost: false
+    hyperkube_download_url: <%= @cluster_hash['k8s_infra']['hyperkube_download_url'] %> 
+    hyperkube_binary_checksum: <%= @cluster_hash['k8s_infra']['hyperkube_binary_checksum'] %>
+    kubeadm_download_url: <%= @cluster_hash['k8s_infra']['kubeadm_download_url'] %>
+    kubeadm_binary_checksum: <%= @cluster_hash['k8s_infra']['kubeadm_binary_checksum'] %>
   hosts:
     <%- @cluster_hash['k8s_infra']['nodes'].each_with_index do |x, index| -%>
     node<%=index %>:
