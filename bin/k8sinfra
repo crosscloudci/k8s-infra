@@ -27,6 +27,8 @@ class K8sInfra < Thor
 
   attr_accessor :logger, :config_location, :pipeline, :hosts
 
+  DATA_DIR = "data/mycluster" 
+
   def initialize(*args)
     @logger = Logger.new(STDOUT)
     r = super *args
@@ -103,14 +105,14 @@ class K8sInfra < Thor
         if ENV["RUBY_ENV"]=="test" then
           puts "env: #{ENV['RUBY_ENV']}"
           # if FileUtils.pwd() =~ /aruba/ then
-          mkdans = FileUtils.mkdir_p '../../data/mycluster'
-          inventory_file = "../../data/mycluster/hosts.yml"
-          kubeconfig_path = "../../data/mycluster/artifacts/admin.conf"
+          mkdans = FileUtils.mkdir_p "../../#{DATA_DIR}"
+          inventory_file = "../../#{DATA_DIR}/hosts.yml"
+          kubeconfig_path = "../../#{DATA_DIR}/artifacts/admin.conf"
         else
           puts "env: #{ENV['RUBY_ENV']}"
-          FileUtils.mkdir_p 'data/mycluster'
-          inventory_file = "data/mycluster/hosts.yml"
-          kubeconfig_path = "data/mycluster/artifacts/admin.conf"
+          FileUtils.mkdir_p DATA_DIR
+          inventory_file = "#{DATA_DIR}/hosts.yml"
+          kubeconfig_path = "#{DATA_DIR}/artifacts/admin.conf"
         end
       end
       full_path = File.expand_path inventory_file 

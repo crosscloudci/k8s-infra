@@ -9,6 +9,7 @@ require './bin/kubespray-integration.rb'
 describe "bin/k8sinfra", :type => :aruba, :exit_timeout => 180 do
   # generate_config --ips-from-cncfci --other options
   #
+  DATA_DIR = "data/mycluster" 
   let(:cmd) { 'bin/k8sinfra' }
 
   it "prints a help message and exits with a 0 status if no arguments are given" do
@@ -174,7 +175,7 @@ describe "bin/k8sinfra", :type => :aruba, :exit_timeout => 180 do
     run_command(cmd_with_args)
     sleep(2)
     puts last_command_started.output
-    cluster_hash = YAML.load_file("data/mycluster/hosts.yml")
+    cluster_hash = YAML.load_file("#{DATA_DIR}/hosts.yml")
     # ks = Kubespray.new(cluster_hash)
     # cluster = ks.start_kubespray
     expect(cluster_hash["all"]["hosts"].nil?).to eq false 
