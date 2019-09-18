@@ -292,6 +292,10 @@ all:
      Provision_type:: <%= @cluster_hash["k8s_infra"]["provision_type"] %>
      Masters: <%= @cluster_hash["k8s_infra"]["nodes"].find_all{|x| x["role"] == "master"}.count %>
      Workers: <%= @cluster_hash["k8s_infra"]["nodes"].find_all{|x| x["role"] == "master"}.count %>
+     hyperkube_download_url: <%= @cluster_hash['k8s_infra']['hyperkube_download_url'] %> 
+     hyperkube_binary_checksum: <%= @cluster_hash['k8s_infra']['hyperkube_binary_checksum'] %>
+     kubeadm_download_url: <%= @cluster_hash['k8s_infra']['kubeadm_download_url'] %>
+     kubeadm_binary_checksum: <%= @cluster_hash['k8s_infra']['kubeadm_binary_checksum'] %>
   Nodes:
     <% @cluster_hash['k8s_infra']['nodes'].each_with_index do |x, index|  -%>
   ip: <%= x['addr'] %>
