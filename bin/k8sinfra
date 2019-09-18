@@ -255,6 +255,7 @@ class K8sInfra < Thor
           f.write config.result(binding)
         end
       end
+      puts "Cluster configuration file generated."
     else
       puts config.result(binding)
     end
