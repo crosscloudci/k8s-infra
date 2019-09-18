@@ -131,8 +131,9 @@ class K8sInfra < Thor
       if options['summary'] then
         config = ERB.new(generic_dry_run_template(), nil, '-')
 		    puts config.result(binding)
+        puts "Successfully completed dry-run for Kubernetes #{@cluster_hash['k8s_infra']['k8s_release']} #{@cluster_hash['k8s_infra']['arch']} cluster (provision-type: #{@cluster_hash['k8s_infra']["provision_type"]})."
       else
-		    puts "Cluster config parsing succeeded." 
+        puts "Successfully completed dry-run for Kubernetes #{@cluster_hash['k8s_infra']['k8s_release']} #{@cluster_hash['k8s_infra']['arch']} cluster (provision-type: #{@cluster_hash['k8s_infra']["provision_type"]})."
       end
       # kubeadm version is always stable
       kubespray_config = ERB.new(kubespray.provision_template(), nil, '-')
@@ -157,7 +158,7 @@ class K8sInfra < Thor
       full_path = File.expand_path inventory_file 
       full_kubeconfig_path = File.expand_path kubeconfig_path 
 
-      puts "Full hosts file path: #{full_path}"
+      puts "Kubespray inventory file: #{full_path}"
       File.open(inventory_file, 'w') do |f| 
         f.write kubespray_config.result(binding)
       end
