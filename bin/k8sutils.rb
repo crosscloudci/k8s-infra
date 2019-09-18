@@ -29,7 +29,7 @@ class K8sUtils
     response = Faraday.get download_url
     raw = RestClient::Request.execute(
       method: :get,
-      url: 'http://releases.ubuntu.com/16.04.2/ubuntu-16.04.2-desktop-amd64.iso',
+      url: download_url,
       log: Logger.new(STDOUT),
       raw_response: true)
     Digest::SHA256.file(raw.file.path).hexdigest

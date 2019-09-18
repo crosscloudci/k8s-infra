@@ -1,0 +1,15 @@
+
+k8s_infra:
+  arch: amd64
+  provision_type: direct
+  k8s_release: v1.16.0
+  stable_k8s_release: v1.16.0
+  nodes:
+    - addr: 4.4.4.4
+      role: master
+    - addr: 5.5.5.5
+      role: master
+    - addr: 6.6.6.6
+      role: master
+    
+  

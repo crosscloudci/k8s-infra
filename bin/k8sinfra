@@ -87,6 +87,29 @@ class K8sInfra < Thor
 			puts "Cluster file has structure errors " 
 			exit 1 
     end
+    if !@cluster_hash['k8s_infra']['nodes'].find { |n| n['role'] == "worker" }
+      errmsg = <<-HEREDOC
+      Cluster config should have a worker node :( 
+      HEREDOC
+      puts errmsg
+      exit 1
+    end
+    if !@cluster_hash['k8s_infra']['nodes'].find { |n| n['role'] == "master" }
+      errmsg = <<-HEREDOC
+      Cluster config should have a master node :( 
+      HEREDOC
+      puts errmsg
+      exit 1
+    end
+    if @cluster_hash['k8s_infra']['provision_type'] != 'virtual' && @cluster_hash['k8s_infra']['provision_type'] != 'direct'
+      errmsg = <<-HEREDOC
+      Provision type "local" is not supported. :( 
+      Supported provisioning types: direct
+      See k8s-infra help provision for more details.)
+      HEREDOC
+      puts errmsg
+      exit 1
+    end
     if @cluster_hash['k8s_infra']["provision_type"]=="direct" then
       @logger.debug "provision_type = direct"
 

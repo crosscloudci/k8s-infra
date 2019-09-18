@@ -39,47 +39,49 @@ class Kubespray
     # output = `ansible-playbook -i data/mycluster/hosts.yml --become --become-user=root lib/provisioner/kubespray/kubespray/cluster.yml`
     # output = `ansible-playbook -i #{datadir}/hosts.yml --become --become-user=root #{plugindir}/cluster.yml`
     complete_stdout, complete_stderr, exitstatus = "passed", "passed", 0
-    if ENV["RUBY_ENV"] !="test" then # to actually provision using rspec uncomment this
+    if ENV["RUBY_ENV"] =="test" then 
+      command = "ansible-playbook -i #{datadir}/hosts.yml --become --become-user=root #{plugindir}/cluster.yml --check"
+    else
       command = "ansible-playbook -i #{datadir}/hosts.yml --become --become-user=root #{plugindir}/cluster.yml"
-      puts "Running command: #{command}"
-       Open3.popen3(command) do |stdin, stdout, stderr, wait_thr|
-        stdin.close_write
+    end
+    puts "Running command: #{command}"
+    Open3.popen3(command) do |stdin, stdout, stderr, wait_thr|
+      stdin.close_write
 
-        begin
-          files = [stdout, stderr]
+      begin
+        files = [stdout, stderr]
 
-          until all_eof(files) do
-            ready = IO.select(files)
+        until all_eof(files) do
+          ready = IO.select(files)
 
-            if ready
-              readable = ready[0]
-              # writable = ready[1]
-              # exceptions = ready[2]
+          if ready
+            readable = ready[0]
+            # writable = ready[1]
+            # exceptions = ready[2]
 
-              readable.each do |f|
-                fileno = f.fileno
+            readable.each do |f|
+              fileno = f.fileno
 
-                begin
-                  data = f.read_nonblock(BLOCK_SIZE)
+              begin
+                data = f.read_nonblock(BLOCK_SIZE)
 
-                  # Do something with the data...
-                  # puts "fileno: #{fileno}, data: #{data}"
-                  puts "#{data}"
-                  @logger.info "#{data}"
-                rescue EOFError => e
-                  puts "fileno: #{fileno} EOF"
-                end
+                # Do something with the data...
+                # puts "fileno: #{fileno}, data: #{data}"
+                puts "#{data}"
+                @logger.info "#{data}"
+              rescue EOFError => e
+                puts "fileno: #{fileno} EOF"
               end
             end
           end
-        rescue IOError => e
-          puts "IOError: #{e}"
         end
-        complete_stdin, complete_stdout,
-        complete_stderr, exitstatus = stdin, stdout, stderr, wait_thr.value.exitstatus
+      rescue IOError => e
+        puts "IOError: #{e}"
       end
+      complete_stdin, complete_stdout,
+      complete_stderr, exitstatus = stdin, stdout, stderr, wait_thr.value.exitstatus
     end
-  {stdout: complete_stdout, stderr: complete_stderr, exit_code: exitstatus}
+    {stdout: complete_stdout, stderr: complete_stderr, exit_code: exitstatus}
   end
 
   def provision_template
