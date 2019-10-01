@@ -3,7 +3,8 @@ require 'rest-client'
 
 class K8sUtils
   STABLE_RELEASE_URL="https://storage.googleapis.com/kubernetes-release/release/stable.txt"
-  HEAD_RELEASE_URL="https://storage.googleapis.com/kubernetes-release-dev/ci-cross/latest.txt"
+  HEAD_RELEASE_URL="https://storage.googleapis.com/kubernetes-release-dev/ci/latest.txt"
+  # HEAD_RELEASE_URL="https://storage.googleapis.com/kubernetes-release-dev/ci-cross/latest.txt" - This isn't true HEAD, but a slower full ci release.
 
   def self.kubernetes_release(release_type)
     release_url = case release_type
