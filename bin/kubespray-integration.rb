@@ -24,6 +24,32 @@ class Kubespray
     files.find { |f| !f.eof }.nil?
   end
 
+  def set_urls(cluster_hash)
+    if cluster_hash['k8s_infra']["provision_type"]=="direct" then
+      @logger.debug "provision_type = direct"
+
+      #Check if binaries are available
+      if cluster_hash['k8s_infra']['release_type'] == 'head'
+        cluster_hash['k8s_infra']['hyperkube_download_url'] ="https://storage.googleapis.com/kubernetes-release-dev/ci-cross/#{cluster_hash['k8s_infra']['k8s_release']}/bin/linux/amd64/hyperkube" 
+      else 
+        cluster_hash['k8s_infra']['hyperkube_download_url'] ="https://storage.googleapis.com/kubernetes-release/release/#{cluster_hash['k8s_infra']['k8s_release']}/bin/linux/amd64/hyperkube" 
+      end 
+      cluster_hash['k8s_infra']['kubeadm_download_url'] ="https://storage.googleapis.com/kubernetes-release/release/#{cluster_hash['k8s_infra']['stable_k8s_release']}/bin/linux/#{cluster_hash['k8s_infra']['arch']}/kubeadm" 
+      cluster_hash['k8s_infra']['hyperkube_binary_checksum']= K8sUtils.k8s_sha(cluster_hash['k8s_infra']['hyperkube_download_url'])
+      if cluster_hash['k8s_infra']['hyperkube_binary_checksum'].nil? then
+        puts "hyperkube_binary_checksum is invalid" 
+        exit 1
+      end
+      cluster_hash['k8s_infra']['kubeadm_binary_checksum']= K8sUtils.k8s_sha( cluster_hash['k8s_infra']['kubeadm_download_url'])
+      if cluster_hash['k8s_infra']['kubeadm_binary_checksum'].nil? then
+        puts "kubeadm_binary_checksum is invalid" 
+        exit 1
+      end
+    end
+
+    cluster_hash
+  end
+
   def start_kubespray
     @logger.debug "pwd: #{FileUtils.pwd()}"
     if ENV["RUBY_ENV"]=="test" then
