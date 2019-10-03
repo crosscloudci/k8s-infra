@@ -22,10 +22,6 @@ class K8sInfra < Thor
   class_option :debug, :type => :boolean, :aliases => "-d"
   class_option :quiet, :type => :boolean, :aliases => "-q"
 
-  #class_option "cross-cloud-config", :type => :string
-  #class_option "integration", :enum => %w{onap test}
-  #class_option "release-type", :enum => %w{stable head master}, :required => true
-
   attr_accessor :logger, :config_location, :pipeline, :hosts
 
   DATA_DIR = "data/mycluster" 
@@ -113,26 +109,11 @@ class K8sInfra < Thor
     if @cluster_hash['k8s_infra']["provision_type"]=="direct" then
       ks = Kubespray.new(@cluster_hash)
       @cluster_hash = ks.set_urls(@cluster_hash)
-    #   @logger.debug "provision_type = direct"
-
-    #   #Check if binaries are available
-    #   if @cluster_hash['k8s_infra']['release_type'] == 'head'
-    #     @cluster_hash['k8s_infra']['hyperkube_download_url'] ="https://storage.googleapis.com/kubernetes-release-dev/ci-cross/#{@cluster_hash['k8s_infra']['k8s_release']}/bin/linux/amd64/hyperkube" 
-    #   else 
-    #     @cluster_hash['k8s_infra']['hyperkube_download_url'] ="https://storage.googleapis.com/kubernetes-release/release/#{@cluster_hash['k8s_infra']['k8s_release']}/bin/linux/amd64/hyperkube" 
-    #   end 
-    #   @cluster_hash['k8s_infra']['kubeadm_download_url'] ="https://storage.googleapis.com/kubernetes-release/release/#{@cluster_hash['k8s_infra']['stable_k8s_release']}/bin/linux/#{@cluster_hash['k8s_infra']['arch']}/kubeadm" 
-    #   @cluster_hash['k8s_infra']['hyperkube_binary_checksum']= K8sUtils.k8s_sha(@cluster_hash['k8s_infra']['hyperkube_download_url'])
-    #   if @cluster_hash['k8s_infra']['hyperkube_binary_checksum'].nil? then
-    #     puts "hyperkube_binary_checksum is invalid" 
-    #     exit 1
-    #   end
-    #   @cluster_hash['k8s_infra']['kubeadm_binary_checksum']= K8sUtils.k8s_sha( @cluster_hash['k8s_infra']['kubeadm_download_url'])
-    #   if @cluster_hash['k8s_infra']['kubeadm_binary_checksum'].nil? then
-    #     puts "kubeadm_binary_checksum is invalid" 
-    #     exit 1
-    #   end
-
+      # Only publish images for HEAD when we are using amd64. This is required because arm64 doesn't get published
+      # on every commit so we use a nightly build instead, which means we don't need to publish for arm64.
+      if @cluster_hash['k8s_infra']['release_type'] == 'head' and @cluster_hash['k8s_infra']['arch']=="amd64"
+        K8sUtils.k8s_publish(@cluster_hash['k8s_infra']['k8s_release'], 'linux/amd64', @cluster_hash['k8s_infra']['registry'])
+      end
       kubespray = Kubespray.new(@cluster_hash)
       if options['summary'] then
         config = ERB.new(generic_dry_run_template(), nil, '-')
@@ -250,7 +231,7 @@ class K8sInfra < Thor
       puts "All required options not handled"
     end
 
-    kubernetes_release = K8sUtils.kubernetes_release(options['release-type'])
+    kubernetes_release = K8sUtils.kubernetes_release(options['release-type']/options['arch'])
     stable_k8s_release = K8sUtils.kubernetes_release('stable')
     config = ERB.new(cluster_config_template("#{options['arch']}", "#{options['provision-type']}", "#{kubernetes_release}", "#{stable_k8s_release}", "#{options['release-type']}"), nil, '-')
     if options['output'] then
@@ -319,6 +300,7 @@ k8s_infra:
   release_type: <%= "#{release_type}" %>
   k8s_release: <%= "#{kubernetes_release}" -%>
   stable_k8s_release: <%= "#{stable_k8s_release}" -%>
+  registry: crosscloudci
   nodes:
     <%for x in @hosts['nodes'] -%>- addr: <%= x['addr'] %>
       role: <%= x['role'] %>

@@ -4,14 +4,20 @@ require 'rest-client'
 class K8sUtils
   STABLE_RELEASE_URL="https://storage.googleapis.com/kubernetes-release/release/stable.txt"
   HEAD_RELEASE_URL="https://storage.googleapis.com/kubernetes-release-dev/ci/latest.txt"
-  # HEAD_RELEASE_URL="https://storage.googleapis.com/kubernetes-release-dev/ci-cross/latest.txt" - This isn't true HEAD, but a slower full ci release.
+  NIGHTLY_RELEASE_URL="https://storage.googleapis.com/kubernetes-release-dev/ci-cross/latest.txt"
 
   def self.kubernetes_release(release_type)
     release_url = case release_type
                   when "stable"
                     "#{STABLE_RELEASE_URL}"
-                  when "head"
+                  when "stable/amd64"
+                    "#{STABLE_RELEASE_URL}"
+                  when "stable/arm64"
+                    "#{STABLE_RELEASE_URL}"
+                  when "head/amd64"
                     "#{HEAD_RELEASE_URL}"
+                  when "head/arm64"
+                    "#{NIGHTLY_RELEASE_URL}"
                   else
                     puts "Release type #{release_type} unknown!"
                     exit 1
@@ -34,5 +40,9 @@ class K8sUtils
       log: Logger.new(STDOUT),
       raw_response: true)
     Digest::SHA256.file(raw.file.path).hexdigest
+  end
+
+  def self.k8s_publish(release, platforms, registry)
+    `./import_push_with_manifest.sh "#{release}" "#{platforms}" "#{registry}"`
   end
 end

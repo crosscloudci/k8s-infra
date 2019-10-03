@@ -9,16 +9,16 @@ for platform in $ARCHS; do
     docker load -i /tmp/kubernetes-${platform}/kubernetes/server/bin/kube-controller-manager.tar
     docker load -i /tmp/kubernetes-${platform}/kubernetes/server/bin/kube-proxy.tar
     docker load -i /tmp/kubernetes-${platform}/kubernetes/server/bin/kube-scheduler.tar
-    docker tag k8s.gcr.io/kube-apiserver-${platform}:$DOCKER_TAG crosscloudci/kube-apiserver-${platform}:$DOCKER_TAG
-    docker tag k8s.gcr.io/kube-controller-manager-${platform}:$DOCKER_TAG crosscloudci/kube-controller-manager-${platform}:$DOCKER_TAG
-    docker tag k8s.gcr.io/kube-proxy-${platform}:$DOCKER_TAG crosscloudci/kube-proxy-${platform}:$DOCKER_TAG
-    docker tag k8s.gcr.io/kube-scheduler-${platform}:$DOCKER_TAG crosscloudci/kube-scheduler-${platform}:$DOCKER_TAG
-    docker push crosscloudci/kube-apiserver-${platform}:$DOCKER_TAG
-    docker push crosscloudci/kube-controller-manager-${platform}:$DOCKER_TAG
-    docker push crosscloudci/kube-proxy-${platform}:$DOCKER_TAG
-    docker push crosscloudci/kube-scheduler-${platform}:$DOCKER_TAG
+    docker tag k8s.gcr.io/kube-apiserver-${platform}:$DOCKER_TAG $3/kube-apiserver-${platform}:$DOCKER_TAG
+    docker tag k8s.gcr.io/kube-controller-manager-${platform}:$DOCKER_TAG $3/kube-controller-manager-${platform}:$DOCKER_TAG
+    docker tag k8s.gcr.io/kube-proxy-${platform}:$DOCKER_TAG $3/kube-proxy-${platform}:$DOCKER_TAG
+    docker tag k8s.gcr.io/kube-scheduler-${platform}:$DOCKER_TAG $3/kube-scheduler-${platform}:$DOCKER_TAG
+    docker push $3/kube-apiserver-${platform}:$DOCKER_TAG
+    docker push $3/kube-controller-manager-${platform}:$DOCKER_TAG
+    docker push $3/kube-proxy-${platform}:$DOCKER_TAG
+    docker push $3/kube-scheduler-${platform}:$DOCKER_TAG
 done
-manifest-tool push from-args --platforms $2 -template crosscloudci/kube-apiserver-ARCH:$DOCKER_TAG --target crosscloudci/kube-apiserver:$DOCKER_TAG
-manifest-tool push from-args --platforms $2 -template crosscloudci/kube-controller-manager-ARCH:$DOCKER_TAG --target crosscloudci/kube-controller-manager:$DOCKER_TAG
-manifest-tool push from-args --platforms $2 -template crosscloudci/kube-proxy-ARCH:$DOCKER_TAG --target crosscloudci/kube-proxy:$DOCKER_TAG
-manifest-tool push from-args --platforms $2 -template crosscloudci/kube-scheduler-ARCH:$DOCKER_TAG --target crosscloudci/kube-scheduler:$DOCKER_TAG
+manifest-tool push from-args --platforms $2 -template $3/kube-apiserver-ARCH:$DOCKER_TAG --target $3/kube-apiserver:$DOCKER_TAG
+manifest-tool push from-args --platforms $2 -template $3/kube-controller-manager-ARCH:$DOCKER_TAG --target $3/kube-controller-manager:$DOCKER_TAG
+manifest-tool push from-args --platforms $2 -template $3/kube-proxy-ARCH:$DOCKER_TAG --target $3/kube-proxy:$DOCKER_TAG
+manifest-tool push from-args --platforms $2 -template $3/kube-scheduler-ARCH:$DOCKER_TAG --target $3/kube-scheduler:$DOCKER_TAG

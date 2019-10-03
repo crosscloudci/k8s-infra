@@ -30,9 +30,9 @@ class Kubespray
 
       #Check if binaries are available
       if cluster_hash['k8s_infra']['release_type'] == 'head'
-        cluster_hash['k8s_infra']['hyperkube_download_url'] ="https://storage.googleapis.com/kubernetes-release-dev/ci-cross/#{cluster_hash['k8s_infra']['k8s_release']}/bin/linux/amd64/hyperkube" 
+        cluster_hash['k8s_infra']['hyperkube_download_url'] ="https://storage.googleapis.com/kubernetes-release-dev/ci/#{cluster_hash['k8s_infra']['k8s_release']}/bin/linux/#{cluster_hash['k8s_infra']['arch']}/hyperkube" 
       else 
-        cluster_hash['k8s_infra']['hyperkube_download_url'] ="https://storage.googleapis.com/kubernetes-release/release/#{cluster_hash['k8s_infra']['k8s_release']}/bin/linux/amd64/hyperkube" 
+        cluster_hash['k8s_infra']['hyperkube_download_url'] ="https://storage.googleapis.com/kubernetes-release/release/#{cluster_hash['k8s_infra']['k8s_release']}/bin/linux/#{cluster_hash['k8s_infra']['arch']}/hyperkube" 
       end 
       cluster_hash['k8s_infra']['kubeadm_download_url'] ="https://storage.googleapis.com/kubernetes-release/release/#{cluster_hash['k8s_infra']['stable_k8s_release']}/bin/linux/#{cluster_hash['k8s_infra']['arch']}/kubeadm" 
       cluster_hash['k8s_infra']['hyperkube_binary_checksum']= K8sUtils.k8s_sha(cluster_hash['k8s_infra']['hyperkube_download_url'])
@@ -49,6 +49,8 @@ class Kubespray
 
     cluster_hash
   end
+
+
 
   def start_kubespray
     @logger.debug "pwd: #{FileUtils.pwd()}"
@@ -115,7 +117,16 @@ class Kubespray
 all:
   vars: 
     ansible_ssh_common_args: '-o StrictHostKeyChecking=no'
+    <%- if @cluster_hash['k8s_infra']['release_type']=='head' and @cluster_hash['k8s_infra']['arch']=='amd64' -%>
+    kube_image_repo: docker.io/crosscloudci
+    <%- elsif @cluster_hash['k8s_infra']['release_type']=='head' and @cluster_hash['k8s_infra']['arch']=='arm64' -%>
+    kube_image_repo: gcr.io/kubernetes-ci-images
+    <%- else -%>
+    kube_image_repo: gcr.io/google-containers
+    <%- end -%>
+    nodelocaldns_image_repo: "k8s.gcr.io/k8s-dns-node-cache"
     kube_version: <%= @cluster_hash['k8s_infra']['k8s_release'] %>
+    download_container: False
     kubeconfig_localhost: true
     kubectl_localhost: false
     hyperkube_download_url: <%= @cluster_hash['k8s_infra']['hyperkube_download_url'] %> 
