@@ -65,7 +65,12 @@ class Kubespray
       plugindir=File.expand_path 'lib/provisioner/kubespray/kubespray'
       datadir=File.expand_path DATA_DIR
     end
-    FileUtils.cp_r(sampledir, datadir)
+    if @cluster_hash['k8s_infra']['arch'] == 'arm64'
+      FileUtils.cp_r(sampledir, datadir)
+      FileUtils.cp_r("#{plugindir}/roles/container-engine/containerd/vars/ubuntu-amd64.yml", "#{plugindir}/roles/container-engine/containerd/vars/ubuntu-arm64.yml")
+    else
+      FileUtils.cp_r(sampledir, datadir)
+    end
     # output = `ansible-playbook -i data/mycluster/hosts.yml --become --become-user=root lib/provisioner/kubespray/kubespray/cluster.yml`
     # output = `ansible-playbook -i #{datadir}/hosts.yml --become --become-user=root #{plugindir}/cluster.yml`
     complete_stdout, complete_stderr, exitstatus = "passed", "passed", 0
@@ -126,7 +131,8 @@ all:
     <%- else -%>
     kube_image_repo: gcr.io/google-containers
     <%- end -%>
-    nodelocaldns_image_repo: "k8s.gcr.io/k8s-dns-node-cache"
+    nodelocaldns_image_repo: gcr.io/google-containers/k8s-dns-node-cache
+    dnsautoscaler_image_repo: gcr.io/google-containers/cluster-proportional-autoscaler-<%= @cluster_hash['k8s_infra']['arch'] %>
     kube_version: <%= @cluster_hash['k8s_infra']['k8s_release'] %>
     etcd_deployment_type: host
     container_manager: containerd
