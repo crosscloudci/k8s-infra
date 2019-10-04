@@ -118,9 +118,7 @@ class K8sInfra < Thor
       if options['summary'] then
         config = ERB.new(generic_dry_run_template(), nil, '-')
         puts config.result(binding)
-        puts "Successfully completed dry-run for Kubernetes #{@cluster_hash['k8s_infra']['k8s_release']} #{@cluster_hash['k8s_infra']['arch']} cluster (provision-type: #{@cluster_hash['k8s_infra']["provision_type"]})."
-      else
-        puts "Successfully completed dry-run for Kubernetes #{@cluster_hash['k8s_infra']['k8s_release']} #{@cluster_hash['k8s_infra']['arch']} cluster (provision-type: #{@cluster_hash['k8s_infra']["provision_type"]})."
+        puts "Successfully completed summary."
       end
       # kubeadm version is always stable
       kubespray_config = ERB.new(kubespray.provision_template(), nil, '-')
@@ -150,10 +148,11 @@ class K8sInfra < Thor
         f.write kubespray_config.result(binding)
       end
       ks = Kubespray.new(@cluster_hash)
-      unless options['dry-run'] then
+      if options['dry-run'] then
+        puts "Dry-run successfully completed"
+      else
         cluster = ks.start_kubespray 
         if cluster[:exit_code] == 0 then
-          puts "Cluster allocation succeeded"
           puts "KUBECONFIG path: #{full_kubeconfig_path}"
         else
           puts "cluster allocation failed"
@@ -231,7 +230,7 @@ class K8sInfra < Thor
       puts "All required options not handled"
     end
 
-    kubernetes_release = K8sUtils.kubernetes_release(options['release-type']/options['arch'])
+    kubernetes_release = K8sUtils.kubernetes_release("#{options['release-type']}/#{options['arch']}")
     stable_k8s_release = K8sUtils.kubernetes_release('stable')
     config = ERB.new(cluster_config_template("#{options['arch']}", "#{options['provision-type']}", "#{kubernetes_release}", "#{stable_k8s_release}", "#{options['release-type']}"), nil, '-')
     if options['output'] then

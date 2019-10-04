@@ -29,11 +29,13 @@ class Kubespray
       @logger.debug "provision_type = direct"
 
       #Check if binaries are available
-      if cluster_hash['k8s_infra']['release_type'] == 'head'
+      if cluster_hash['k8s_infra']['release_type'] == 'head' && cluster_hash['k8s_infra']['arch'] == 'amd64'
         cluster_hash['k8s_infra']['hyperkube_download_url'] ="https://storage.googleapis.com/kubernetes-release-dev/ci/#{cluster_hash['k8s_infra']['k8s_release']}/bin/linux/#{cluster_hash['k8s_infra']['arch']}/hyperkube" 
-      else 
-        cluster_hash['k8s_infra']['hyperkube_download_url'] ="https://storage.googleapis.com/kubernetes-release/release/#{cluster_hash['k8s_infra']['k8s_release']}/bin/linux/#{cluster_hash['k8s_infra']['arch']}/hyperkube" 
-      end 
+      elsif cluster_hash['k8s_infra']['release_type'] == 'head' && cluster_hash['k8s_infra']['arch'] == 'arm64'
+        cluster_hash['k8s_infra']['hyperkube_download_url'] ="https://storage.googleapis.com/kubernetes-release-dev/ci-cross/#{cluster_hash['k8s_infra']['k8s_release']}/bin/linux/#{cluster_hash['k8s_infra']['arch']}/hyperkube"
+      else
+        cluster_hash['k8s_infra']['hyperkube_download_url'] ="https://storage.googleapis.com/kubernetes-release/release/#{cluster_hash['k8s_infra']['k8s_release']}/bin/linux/#{cluster_hash['k8s_infra']['arch']}/hyperkube"
+      end
       cluster_hash['k8s_infra']['kubeadm_download_url'] ="https://storage.googleapis.com/kubernetes-release/release/#{cluster_hash['k8s_infra']['stable_k8s_release']}/bin/linux/#{cluster_hash['k8s_infra']['arch']}/kubeadm" 
       cluster_hash['k8s_infra']['hyperkube_binary_checksum']= K8sUtils.k8s_sha(cluster_hash['k8s_infra']['hyperkube_download_url'])
       if cluster_hash['k8s_infra']['hyperkube_binary_checksum'].nil? then
