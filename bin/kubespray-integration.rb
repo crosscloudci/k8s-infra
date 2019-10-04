@@ -128,6 +128,7 @@ all:
     <%- end -%>
     nodelocaldns_image_repo: "k8s.gcr.io/k8s-dns-node-cache"
     kube_version: <%= @cluster_hash['k8s_infra']['k8s_release'] %>
+    etcd_deployment_type: host
     container_manager: containerd
     download_container: False
     kubeconfig_localhost: true
