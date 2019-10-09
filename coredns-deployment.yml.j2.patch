@@ -1,9 +1,0 @@
---- coredns-deployment.yml.j2	2019-06-19 13:16:01.042339709 -0400
-+++ coredns-deployment.yml.j2.patch	2019-07-04 17:06:36.171332441 -0400
-@@ -1,5 +1,5 @@
- ---
--apiVersion: extensions/v1beta1
-+apiVersion: apps/v1
- kind: Deployment
- metadata:
-   name: "coredns{{ coredns_ordinal_suffix }}"
