@@ -112,7 +112,7 @@ class K8sInfra < Thor
       # Only publish images for HEAD when we are using amd64. This is required because arm64 doesn't get published
       # on every commit so we use a nightly build instead, which means we don't need to publish for arm64.
       unless options['dry-run']
-        if @cluster_hash['k8 s_infra']['release_type'] == 'head' and @cluster_hash['k8s_infra']['arch']=="amd64"
+        if @cluster_hash['k8s_infra']['release_type'] == 'head' && @cluster_hash['k8s_infra']['arch']=="amd64" then
           K8sUtils.k8s_publish(@cluster_hash['k8s_infra']['k8s_release'], 'linux/amd64', @cluster_hash['k8s_infra']['registry'])
         end
       end
