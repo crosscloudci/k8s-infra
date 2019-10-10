@@ -49,8 +49,8 @@ before_script:
     - mkdir ./data
     - echo "$SSH_KEY" > .id_rsa && chmod 400 .id_rsa
     - eval $(ssh-agent) && ssh-add .id_rsa
-    - /k8s-infra/bin/k8sinfra generate_config --release-type="$PIPELINE_RELEASE_TYPE" --infra-job="$INFRA_PIPELINE" -o ./data/cluster.yml
-    - /k8s-infra/bin/k8sinfra provision --config-file './data/cluster.yml'
+    - /k8s-infra/bin/k8sinfra generate_config --release-type="$PIPELINE_RELEASE_TYPE" --infra-job="$INFRA_PIPELINE" -o /tmp/cluster.yml
+    - /k8s-infra/bin/k8sinfra provision --config-file '/tmp/cluster.yml'
     - sleep 1000000
   artifacts:
     when: always
