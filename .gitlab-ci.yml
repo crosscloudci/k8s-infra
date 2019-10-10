@@ -47,6 +47,7 @@ before_script:
          export INFRA_PIPELINE="$HEAD_ARM64_JOB"
       fi
     - mkdir ./data
+    - mkdir ~/.docker && echo "$DOCKER_AUTH" > ~/.docker/config.json
     - echo "$SSH_KEY" > .id_rsa && chmod 400 .id_rsa
     - eval $(ssh-agent) && ssh-add .id_rsa
     - echo /k8s-infra/bin/k8sinfra generate_config --release-type="$PIPELINE_RELEASE_TYPE" --infra-job="$INFRA_PIPELINE" -o /tmp/cluster.yml
