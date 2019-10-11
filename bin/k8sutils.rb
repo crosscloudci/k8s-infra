@@ -34,18 +34,16 @@ class K8sUtils
 
   def self.k8s_sha(download_url)
     response = Faraday.get "#{download_url}.sha256"
-    if response.body.nil?
-      @logger.error "Failed to download sha256 for #{download_url}"
-      return
-    end
-    # response = Faraday.get download_url
-    # raw = RestClient::Request.execute(
-    #   method: :get,
-    #   url: download_url,
-    #   log: Logger.new(STDOUT),
-    #   raw_response: true)
-    # Digest::SHA256.file(raw.file.path).hexdigest
     response.body.split[0]
+    unless response.body.split[0].size == 64
+      response = Faraday.get download_url
+      raw = RestClient::Request.execute(
+        method: :get,
+        url: download_url,
+        log: Logger.new(STDOUT),
+        raw_response: true)
+      Digest::SHA256.file(raw.file.path).hexdigest
+    end
   end
 
   def self.k8s_publish(release, platforms, registry)
