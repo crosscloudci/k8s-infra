@@ -51,7 +51,7 @@ before_script:
     - eval $(ssh-agent) && ssh-add .id_rsa
     - mkdir ./data
     - pushd /k8s-infra
-    - /k8s-infra/bin/k8sinfra generate_config --release-type="$PIPELINE_RELEASE_TYPE" --infra-job="$INFRA_PIPELINE" -o /tmp/cluster.yml
+    - /k8s-infra/bin/k8sinfra generate_config --arch="$ARCH" --release-type="$PIPELINE_RELEASE_TYPE" --infra-job="$INFRA_PIPELINE" -o /tmp/cluster.yml
     - cat /tmp/cluster.yml
     # - /k8s-infra/bin/k8sinfra provision --config-file '/tmp/cluster.yml'
     # - popd
