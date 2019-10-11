@@ -52,11 +52,10 @@ before_script:
     - mkdir ./data
     - pushd /k8s-infra
     - /k8s-infra/bin/k8sinfra generate_config --arch="$ARCH" --release-type="$PIPELINE_RELEASE_TYPE" --infra-job="$INFRA_PIPELINE" -o /tmp/cluster.yml
-    - cat /tmp/cluster.yml
-    # - /k8s-infra/bin/k8sinfra provision --config-file '/tmp/cluster.yml'
-    # - popd
-    # - cp /tmp/cluster.yml ./data
-    # - cp -r /k8s-infra/data/mycluster ./data
+    - /k8s-infra/bin/k8sinfra provision --config-file '/tmp/cluster.yml'
+    - popd
+    - cp /tmp/cluster.yml ./data
+    - cp -r /k8s-infra/data/mycluster ./data
   artifacts:
     when: always
     expire_in: 4 weeks
