@@ -34,7 +34,6 @@ class K8sUtils
 
   def self.k8s_sha(download_url)
     response = Faraday.get "#{download_url}.sha256"
-    response.body.split[0]
     unless response.body.split[0].size == 64
       response = Faraday.get download_url
       raw = RestClient::Request.execute(
@@ -44,6 +43,7 @@ class K8sUtils
         raw_response: true)
       Digest::SHA256.file(raw.file.path).hexdigest
     end
+    response.body.split[0]
   end
 
   def self.k8s_publish(release, platforms, registry)
