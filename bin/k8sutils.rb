@@ -15,7 +15,7 @@ class K8sUtils
                   when "stable/arm64"
                     "#{STABLE_RELEASE_URL}"
                   when "head/amd64"
-                    "#{HEAD_RELEASE_URL}"
+                    "#{NIGHTLY_RELEASE_URL}"
                   when "head/arm64"
                     "#{NIGHTLY_RELEASE_URL}"
                   else
