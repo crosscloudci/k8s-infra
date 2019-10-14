@@ -83,21 +83,21 @@ class K8sInfra < Thor
 			puts "Cluster file has structure errors " 
 			exit 1 
     end
-    if !@cluster_hash['k8s_infra']['nodes'].find { |n| n['role'] == "worker" }
+    if !@cluster_hash['k8s_infra']['nodes'].find { |n| n['role'] == "worker" } then
       errmsg = <<-HEREDOC
       Cluster config should have a worker node :( 
       HEREDOC
       puts errmsg
       exit 1
     end
-    if !@cluster_hash['k8s_infra']['nodes'].find { |n| n['role'] == "master" }
+    if !@cluster_hash['k8s_infra']['nodes'].find { |n| n['role'] == "master" } then
       errmsg = <<-HEREDOC
       Cluster config should have a master node :( 
       HEREDOC
       puts errmsg
       exit 1
     end
-    if @cluster_hash['k8s_infra']['provision_type'] != 'virtual' && @cluster_hash['k8s_infra']['provision_type'] != 'direct'
+    if @cluster_hash['k8s_infra']['provision_type'] != 'virtual' && @cluster_hash['k8s_infra']['provision_type'] != 'direct' then
       errmsg = <<-HEREDOC
       Provision type "local" is not supported. :( 
       Supported provisioning types: direct
@@ -115,7 +115,7 @@ class K8sInfra < Thor
       #   if @cluster_hash['k8s_infra']['release_type'] == 'head' && @cluster_hash['k8s_infra']['arch'] == 'amd64' then
       #     K8sUtils.k8s_publish(@cluster_hash['k8s_infra']['k8s_release'], 'linux/amd64', @cluster_hash['k8s_infra']['registry'])
       #   end
-      end
+      # end
       kubespray = Kubespray.new(@cluster_hash)
       if options['summary'] then
         config = ERB.new(generic_dry_run_template(), nil, '-')
