@@ -64,7 +64,7 @@ before_script:
 
 # Per Cloud Destroy Template only run when DESTROY_VAR is Set
 .kubernetes_cloud_destroy_template: &kubernetes_cloud_destroy_template
-  image: ${CI_REGISTRY}/cncf/cross-cloud/provisioning:$CI_COMMIT_REF_SLUG
+  image: "$CI_REGISTRY_IMAGE:$CI_COMMIT_REF_NAME"
   stage: Cross-Cloud
   when: manual
   script:
