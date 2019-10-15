@@ -1,6 +1,7 @@
 stages:
   - Artifacts
   - Cross-Cloud
+  - Deprovision
   - End-To-End
   - Update-Dashboard
 
@@ -65,10 +66,9 @@ Provisioning:
 
 Kubernetes_destroy:
   image: "$CI_REGISTRY_IMAGE:$CI_COMMIT_REF_NAME"
-  stage: Cross-Cloud
+  stage: Deprovision
   when: manual
   script:
-    - sleep 1000000
     - echo "$SSH_KEY" > .id_rsa && chmod 400 .id_rsa
     - eval $(ssh-agent) && ssh-add .id_rsa
     - cp -r ./data /k8s-infra/
