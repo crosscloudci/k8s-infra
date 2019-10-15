@@ -68,6 +68,7 @@ Kubernetes_destroy:
   stage: Cross-Cloud
   when: manual
   script:
+    - sleep 1000000
     - echo "$SSH_KEY" > .id_rsa && chmod 400 .id_rsa
     - eval $(ssh-agent) && ssh-add .id_rsa
     - cp -r ./data /k8s-infra/
