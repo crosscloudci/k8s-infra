@@ -71,8 +71,8 @@ Kubernetes_destroy:
   script:
     - echo "$SSH_KEY" > .id_rsa && chmod 400 .id_rsa
     - eval $(ssh-agent) && ssh-add .id_rsa
-    - cp -r ./data /k8s-infra/
-    - cd /k8s-infra
+    - cp -r ./data /k8s-infra/lib/provisioner/kubespray/kubespray/
+    - cd /k8s-infra/lib/provisioner/kubespray/kubespray/
     - ansible-playbook -i ./data/mycluster/hosts.yml -e "reset_confirmation='yes'" --become --become-user=root reset.yml
 
 Dashboard:
