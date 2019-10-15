@@ -66,8 +66,6 @@ Provisioning:
 Kubernetes_destroy:
   image: "$CI_REGISTRY_IMAGE:$CI_COMMIT_REF_NAME"
   stage: Cross-Cloud
-  dependencies:
-    - Provisioning
   when: manual
   script:
     - echo "$SSH_KEY" > .id_rsa && chmod 400 .id_rsa
