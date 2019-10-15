@@ -73,7 +73,8 @@ Kubernetes_destroy:
     - eval $(ssh-agent) && ssh-add .id_rsa
     - cp -r ./data /k8s-infra/lib/provisioner/kubespray/kubespray/
     - cd /k8s-infra/lib/provisioner/kubespray/kubespray/
-    - ansible-playbook -i ./data/mycluster/hosts.yml -e "reset_confirmation='yes'" --become --become-user=root reset.yml
+    # Don't fail when running deprovisoning, packet networking always fails to come back up.
+    - ansible-playbook -i ./data/mycluster/hosts.yml -e "reset_confirmation='yes'" --become --become-user=root reset.yml || true
 
 Dashboard:
   image: crosscloudci/debian-docker
