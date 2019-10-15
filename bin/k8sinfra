@@ -159,6 +159,7 @@ class K8sInfra < Thor
         else
           puts "cluster allocation failed"
         end
+        exit cluster[:exit_code]
       end
     else
       @logger.debug "provision_type = not direct"
