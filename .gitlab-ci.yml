@@ -22,7 +22,7 @@ before_script:
      echo 'Use container Ruby' 
     fi
 
-.build_source: &build_source
+Build-Source:
   image: crosscloudci/debian-docker:latest
   stage: Artifacts
   script:
@@ -31,8 +31,7 @@ before_script:
     - docker build -t "$CI_REGISTRY_IMAGE:$CI_COMMIT_REF_NAME" .
     - docker push "$CI_REGISTRY_IMAGE:$CI_COMMIT_REF_NAME"
 
-# Deploy Template used for Each Cloud
-.kubernetes_deploy_template: &kubernetes_deploy_template
+Provisioning:
   image: "$CI_REGISTRY_IMAGE:$CI_COMMIT_REF_NAME"
   stage: Cross-Cloud
   script:
@@ -64,8 +63,7 @@ before_script:
     paths:
       - ./data/
 
-# Per Cloud Destroy Template only run when DESTROY_VAR is Set
-.kubernetes_cloud_destroy_template: &kubernetes_cloud_destroy_template
+Kubernetes_destroy:
   image: "$CI_REGISTRY_IMAGE:$CI_COMMIT_REF_NAME"
   stage: Cross-Cloud
   dependencies:
@@ -77,19 +75,6 @@ before_script:
     - cp -r ./data /k8s-infra/
     - cd /k8s-infra
     - ansible-playbook -i ./data/mycluster/hosts.yml -e "reset_confirmation='yes'" --become --become-user=root reset.yml
-
-
-# Build-Source VARs
-Build-Source:
-  <<: *build_source
-
-# Cloud Deploy VARs
-Provisioning:
-  <<: *kubernetes_deploy_template
-
-# AWS Destroy VARs
-Kubernetes_destroy:
-  <<: *kubernetes_cloud_destroy_template
 
 Dashboard:
   image: crosscloudci/debian-docker
