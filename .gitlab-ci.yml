@@ -1,190 +1,91 @@
 stages:
-  - Dependencies
-  - Bootstrap
-  - Reset
-  - Test
+  - Artifacts
+  - Cross-Cloud
+  - Deprovision
+  - End-To-End
+  - Update-Dashboard
 
 before_script:
   - export BASE_URL=${BASE_URL:-$(echo $CI_PROJECT_URL |  cut -d'/' -f1-3)}
+  - export KUBECONFIG=$(pwd)/data/packet/kubeconfig
   - >
     if [ -z "$CROSS_CLOUD_YML" ]; then
       export CROSS_CLOUD_YML="https://raw.githubusercontent.com/CrossCloudCI/cncf-configuration/production/cross-cloud.yml"
     else
       export CROSS_CLOUD_YML="$CROSS_CLOUD_YML"
     fi
-  # - source /opt/local/etc/rvmrc ; source /opt/local/etc/profile.d/rvm.sh ; cp -a /opt/local/dashboard /dashboard ; pushd /dashboard ; source /opt/local/.env ; ./bin/update_dashboard ; popd
+  - >
+    if [ "$CI_JOB_NAME" == "Build-Source" ]; then
+      source /opt/local/etc/rvmrc ; source /opt/local/etc/profile.d/rvm.sh ; cp -a /opt/local/dashboard /dashboard ; pushd /dashboard ; source /opt/local/.env ; ./bin/update_dashboard ; popd
+    elif [ "$CI_JOB_NAME" == "Dashboard" ]; then
+      source /opt/local/etc/rvmrc ; source /opt/local/etc/profile.d/rvm.sh ; cp -a /opt/local/dashboard /dashboard ; pushd /dashboard ; source /opt/local/.env ; ./bin/update_dashboard ; popd
+    else
+     echo 'Use container Ruby' 
+    fi
 
-Kubespray:
+Build-Source:
   image: crosscloudci/debian-docker:latest
-  stage: Dependencies
+  stage: Artifacts
   script:
-    # Fetch Patches
-    - wget https://raw.githubusercontent.com/crosscloudci/k8s-infra/master/calico-node.yml.j2.patch
-    - wget https://raw.githubusercontent.com/crosscloudci/k8s-infra/master/coredns-deployment.yml.j2.patch
-    - wget https://raw.githubusercontent.com/crosscloudci/k8s-infra/master/kubeadm-images.yaml.j2.patch
-    - wget https://raw.githubusercontent.com/crosscloudci/k8s-infra/master/kubeadm-config.v1beta1.yaml.j2.patch
-    - wget https://raw.githubusercontent.com/crosscloudci/k8s-infra/master/kubeadm-config.v1beta2.yaml.j2.patch
-    # Apply Patches
-    - patch roles/network_plugin/calico/templates/calico-node.yml.j2 calico-node.yml.j2.patch
-    - patch roles/kubernetes-apps/ansible/templates/coredns-deployment.yml.j2 coredns-deployment.yml.j2.patch
-    - patch roles/download/templates/kubeadm-images.yaml.j2 kubeadm-images.yaml.j2.patch
-    - patch roles/kubernetes/master/templates/kubeadm-config.v1beta1.yaml.j2 kubeadm-config.v1beta1.yaml.j2.patch
-    - patch roles/kubernetes/master/templates/kubeadm-config.v1beta2.yaml.j2 kubeadm-config.v1beta2.yaml.j2.patch
-    - docker login -u "gitlab-ci-token" -p "$CI_JOB_TOKEN" "$CI_REGISTRY"
-    - docker build -t "$CI_REGISTRY_IMAGE:$CI_COMMIT_REF_NAME" . 
+    - docker login -u "gitlab-ci-token" -p "$CI_JOB_TOKEN" $CI_REGISTRY
+    - docker build -f Dockerfile.deps -t crosscloudci/k8s-infra-deps:latest .
+    - docker build -t "$CI_REGISTRY_IMAGE:$CI_COMMIT_REF_NAME" .
     - docker push "$CI_REGISTRY_IMAGE:$CI_COMMIT_REF_NAME"
 
-Kubernetes:
-  image: buildpack-deps:stretch
-  stage: Dependencies
-  script:
-    - apt update && apt -y install jq
-    - PROJECT_JOB=$(curl --header "PRIVATE-TOKEN:${TOKEN}" "${BASE_URL}/api/v4/projects/14/pipelines/${K8S_PIPELINE_ID}/jobs?scope=success" | jq '.[] | select(.name=="container") | .id') 
-    - curl -s -o release.env -L "${BASE_URL}/kubernetes/kubernetes/-/jobs/${PROJECT_JOB}/artifacts/raw/release.env"
-    - curl -s -o kubespray.env -L "${BASE_URL}/kubernetes/kubernetes/-/jobs/${PROJECT_JOB}/artifacts/raw/kubespray.env"
-    - cat release.env
-    - cat kubespray.env
-
-  artifacts:
-    name: "${CI_JOB_NAME}.${CI_PIPELINE_ID}.${CI_JOB_ID}"
-    when: always
-    expire_in: 1 weeks
-    paths:
-      - release.env
-      - kubespray.env
-
-Infra:
-  image: buildpack-deps:stretch
-  stage: Dependencies
-  script:
-    - apt update && apt -y install jq
-    - PROJECT_JOB=$(curl --header "PRIVATE-TOKEN:${TOKEN}" "${BASE_URL}/api/v4/projects/63/pipelines/${INFRA_PIPELINE_ID}/jobs?scope=success" | jq '.[] | select(.name=="Release") | .id') 
-    - curl -s -o nodes.env -L "${BASE_URL}/cncf/infra-provisioning/-/jobs/${PROJECT_JOB}/artifacts/raw/terraform/nodes.env"
-    - cat nodes.env
-
-  artifacts:
-    name: "${CI_JOB_NAME}.${CI_PIPELINE_ID}.${CI_JOB_ID}"
-    when: always
-    expire_in: 1 weeks
-    paths:
-      - nodes.env
-
-K8s-Bootstrap:
+Provisioning:
   image: "$CI_REGISTRY_IMAGE:$CI_COMMIT_REF_NAME"
-  stage: Bootstrap
-  only:
-    variables:
-      - $RESET == null
-  dependencies:
-    - Kubernetes
-    - Infra
-  variables:
-    ANSIBLE_HOST_KEY_CHECKING: "False"
+  stage: Cross-Cloud
+  script:
+    - >
+      if [ $PIPELINE_RELEASE_TYPE == "stable" ] && [ $ARCH == "amd64" ]; then
+         export INFRA_PIPELINE="$STABLE_AMD64_JOB"
+      elif [ $PIPELINE_RELEASE_TYPE == "stable" ] && [ $ARCH == "arm64" ]; then
+         export INFRA_PIPELINE="$STABLE_ARM64_JOB"
+      elif [ $PIPELINE_RELEASE_TYPE == "head" ] && [ $ARCH == "amd64" ]; then
+         export INFRA_PIPELINE="$HEAD_AMD64_JOB"
+      else
+         export INFRA_PIPELINE="$HEAD_ARM64_JOB"
+      fi
+    - mkdir ~/.docker && echo "$DOCKER_AUTH" > ~/.docker/config.json
+    - echo "$SSH_KEY" > .id_rsa && chmod 400 .id_rsa
+    - eval $(ssh-agent) && ssh-add .id_rsa
+    - pushd /k8s-infra
+    - /k8s-infra/bin/k8sinfra generate_config --arch="$ARCH" --release-type="$PIPELINE_RELEASE_TYPE" --infra-job="$INFRA_PIPELINE" -o /tmp/cluster.yml
+    - /k8s-infra/bin/k8sinfra provision --config-file '/tmp/cluster.yml'
+    - export KUBECONFIG=/k8s-infra/data/mycluster/artifacts/admin.conf
+    - >
+      if [ "$ARCH" = "arm64" ]; then
+        kubectl create -f ./manifests/helm-rbac.yml
+        helm init --service-account tiller --tiller-image=jessestuart/tiller --override spec.selector.matchLabels.'name'='tiller',spec.selector.matchLabels.'app'='helm' --output yaml | sed 's@apiVersion: extensions/v1beta1@apiVersion: apps/v1@' | kubectl apply -f -
+      else
+        helm init --service-account tiller --override spec.selector.matchLabels.'name'='tiller',spec.selector.matchLabels.'app'='helm' --output yaml | sed 's@apiVersion: extensions/v1beta1@apiVersion: apps/v1@' | kubectl apply -f -
+      fi
+    - popd
+    - mkdir ./data
+    - cp /tmp/cluster.yml ./data
+    - cp -r /k8s-infra/data/mycluster ./data
+    - mkdir -p ./data/packet
+    - cp /k8s-infra/data/mycluster/artifacts/admin.conf ./data/packet/kubeconfig
+  artifacts:
+    when: always
+    expire_in: 4 weeks
+    paths:
+      - ./data/
+
+Kubernetes_destroy:
+  image: "$CI_REGISTRY_IMAGE:$CI_COMMIT_REF_NAME"
+  stage: Deprovision
+  when: manual
   script:
     - echo "$SSH_KEY" > .id_rsa && chmod 400 .id_rsa
     - eval $(ssh-agent) && ssh-add .id_rsa
-    - source nodes.env
-    - mv kubespray.env /kubespray
-    - cd /kubespray
-    - cp -rfp inventory/sample inventory/mycluster
-    - CONFIG_FILE=inventory/mycluster/hosts.yml python3 contrib/inventory_builder/inventory.py "${MASTERS[@]}" "${WORKERS[@]}"
-    - ansible-playbook -i inventory/mycluster/hosts.yml -e kubeconfig_localhost=true -e kubectl_localhost=true -e @kubespray.env --become --become-user=root cluster.yml
-    - sleep 100000000
-    - cd - && mv /kubespray/inventory/mycluster .
-  artifacts:
-    name: "${CI_JOB_NAME}.${CI_PIPELINE_ID}.${CI_JOB_ID}"
-    when: always
-    expire_in: 1 weeks
-    paths:
-      - mycluster/artifacts/admin.conf
+    - cp -r ./data /k8s-infra/lib/provisioner/kubespray/kubespray/
+    - cd /k8s-infra/lib/provisioner/kubespray/kubespray/
+    # Don't fail when running deprovisoning, packet networking always fails to come back up.
+    - ansible-playbook -i ./data/mycluster/hosts.yml -e "reset_confirmation='yes'" --become --become-user=root reset.yml || true
 
-K8s-Reset:
-  image: "$CI_REGISTRY_IMAGE:$CI_COMMIT_REF_NAME"
-  stage: Reset
-  only:
-    variables:
-      - $RESET == "yes"
-  dependencies:
-    - Infra
-    - Kubernetes
-  variables:
-    ANSIBLE_HOST_KEY_CHECKING: "False"
+Dashboard:
+  image: crosscloudci/debian-docker
+  stage: Update-Dashboard
   script:
-    - echo "$SSH_KEY" > .id_rsa && chmod 400 .id_rsa
-    - eval $(ssh-agent) && ssh-add .id_rsa
-    - source nodes.env
-    - mv kubespray.env /kubespray
-    - cd /kubespray
-    - cp -rfp inventory/sample inventory/mycluster
-    - CONFIG_FILE=inventory/mycluster/hosts.yml python3 contrib/inventory_builder/inventory.py "${MASTERS[@]}" "${WORKERS[@]}"
-    - ansible-playbook -i inventory/mycluster/hosts.yml -e kubeconfig_localhost=true -e kubectl_localhost=true -e @kubespray.env -e "reset_confirmation='yes'" --become --become-user=root reset.yml
-
-K8s-Conformance:
-  image:
-    name: "golang:1.12.7-stretch"
-  stage: Test
-  only:
-    variables:
-      - $RESET == null
-      # - $ARCH == "amd64"
-  dependencies:
-    - K8s-Bootstrap
-    - Kubernetes
-  variables:
-    KUBERNETES_CONFORMANCE_TEST: "y"
-  script:
-    - source release.env
-    - apt update && apt install -y rsync
-    - export KUBECONFIG=$(pwd)/mycluster/artifacts/admin.conf 
-    # - wget https://github.com/kubernetes/kubernetes/archive/v1.14.4.tar.gz
-    # - tar -xvf v1.14.4.tar.gz
-    # - cd kubernetes-1.14.4
-    - git clone https://github.com/kubernetes/kubernetes.git /kubernetes
-    - cd /kubernetes
-    - git checkout "$KUBERNETES_SHA"
-    - go get -u k8s.io/test-infra/kubetest
-    - make WHAT="test/e2e/e2e.test vendor/github.com/onsi/ginkgo/ginkgo cmd/kubectl"
-    - kubetest --provider=skeleton --test --test_args="--ginkgo.focus=\[Conformance\]"
-    #Sonobuoy Tests (Only for stable)
-    # - wget https://github.com/heptio/sonobuoy/releases/download/v0.15.0/sonobuoy_0.15.0_linux_amd64.tar.gz 
-    # - tar -xvf ./sonobuoy_0.15.0_linux_amd64.tar.gz
-    # - ./sonobuoy run --wait
-
-# K8s-Conformance-arm64:
-#   tags:
-#     - arm
-#   image:
-#     name: "golang:1.12.7-stretch"
-#   stage: Test
-#   only:
-#     variables:
-#       - $ARCH == "arm64"
-#       # - $RESET == null
-#   dependencies:
-#     - K8s-Bootstrap
-#     - Kubernetes
-#   variables:
-#     KUBERNETES_CONFORMANCE_TEST: "y"
-#   script:
-#     - source release.env
-#     - apt update && apt install -y rsync
-#     - export KUBECONFIG=$(pwd)/mycluster/artifacts/admin.conf 
-#     # - wget https://github.com/kubernetes/kubernetes/archive/v1.14.4.tar.gz
-#     # - tar -xvf v1.14.4.tar.gz
-#     # - cd kubernetes-1.14.4
-#     - git clone https://github.com/kubernetes/kubernetes.git /kubernetes
-#     - cd /kubernetes
-#     - git checkout "$KUBERNETES_SHA"
-#     - go get -u k8s.io/test-infra/kubetest
-#     - make WHAT="test/e2e/e2e.test vendor/github.com/onsi/ginkgo/ginkgo cmd/kubectl" KUBE_BUILD_PLATFORMS=linux/"$ARCH"
-#     - kubetest --provider=skeleton --test --test_args="--ginkgo.focus=\[Conformance\]"
-    #Sonobuoy Tests (Only for stable)
-    # - wget https://github.com/heptio/sonobuoy/releases/download/v0.15.0/sonobuoy_0.15.0_linux_amd64.tar.gz 
-    # - tar -xvf ./sonobuoy_0.15.0_linux_amd64.tar.gz
-    # - ./sonobuoy run --wait
-
-
-
- 
-
-
+    - echo 'true'

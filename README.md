@@ -107,3 +107,9 @@ Error message if cluster.yml structure is not valid
 ```
  docker run -ti crosscloudci/k8s-infra:latest k8s-infra/bin/k8sinfra provision --config-file=k8s-infra/example_hosts-invalid_structure.yml 
 ```
+## TESTING
+Develop with rspec with the installed kubespray dependencies by mapping the k8s-infra directory into the container
+and running rspec spec
+```
+docker run -v $(pwd):/k8s-infra -v /home/pair/.ssh/id_rsa:/root/.ssh/id_rsa  -ti kubespray /bin/bash 
+```
