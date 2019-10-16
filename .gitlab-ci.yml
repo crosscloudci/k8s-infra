@@ -52,6 +52,14 @@ Provisioning:
     - pushd /k8s-infra
     - /k8s-infra/bin/k8sinfra generate_config --arch="$ARCH" --release-type="$PIPELINE_RELEASE_TYPE" --infra-job="$INFRA_PIPELINE" -o /tmp/cluster.yml
     - /k8s-infra/bin/k8sinfra provision --config-file '/tmp/cluster.yml'
+    - export KUBECONFIG=/k8s-infra/data/mycluster/artifacts/admin.conf
+    - kubectl create -f ./manifests/helm-rbac.yml
+    - >
+      if [ "$ARCH" = "arm64" ]; then
+        helm init --service-account tiller --tiller-image=jessestuart/tiller --override spec.selector.matchLabels.'name'='tiller',spec.selector.matchLabels.'app'='helm' --output yaml | sed 's@apiVersion: extensions/v1beta1@apiVersion: apps/v1@' | kubectl apply -f -
+      else
+        helm init --service-account tiller --override spec.selector.matchLabels.'name'='tiller',spec.selector.matchLabels.'app'='helm' --output yaml | sed 's@apiVersion: extensions/v1beta1@apiVersion: apps/v1@' | kubectl apply -f -
+      fi
     - popd
     - mkdir ./data
     - cp /tmp/cluster.yml ./data
