@@ -120,6 +120,12 @@ RUN mkdir -p "$GEM_HOME" && chmod 777 "$GEM_HOME"
 #      stable" \
 #      && apt update -y && apt-get install docker-ce -y
 
+# Helm 
+ARG VERSION=v2.14.3
+ARG FILENAME=helm-${VERSION}-linux-amd64.tar.gz
+RUN curl -L http://storage.googleapis.com/kubernetes-helm/${FILENAME} | tar zxv -C /tmp
+RUN mv /tmp/linux-amd64/helm /usr/local/bin/
+
 # Kubectl
 RUN curl -LO https://storage.googleapis.com/kubernetes-release/release/v1.14.4/bin/linux/amd64/kubectl \
     && chmod a+x kubectl && cp kubectl /usr/local/bin/kubectl
