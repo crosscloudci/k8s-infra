@@ -141,6 +141,10 @@ all:
     hyperkube_binary_checksum: <%= @cluster_hash['k8s_infra']['hyperkube_binary_checksum'] %>
     kubeadm_download_url: <%= @cluster_hash['k8s_infra']['kubeadm_download_url'] %>
     kubeadm_binary_checksum: <%= @cluster_hash['k8s_infra']['kubeadm_binary_checksum'] %>
+    <%- if @cluster_hash['k8s_infra']['arch']=='amd64' -%>
+    helm_enabled: true
+    helm_deployment_type: host
+    <%- end -%>
   hosts:
     <%- @cluster_hash['k8s_infra']['nodes'].each_with_index do |x, index| -%>
     node<%=index %>:
