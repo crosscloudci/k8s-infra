@@ -54,6 +54,7 @@ Provisioning:
     - /k8s-infra/bin/k8sinfra provision --config-file '/tmp/cluster.yml'
     - export KUBECONFIG=/k8s-infra/data/mycluster/artifacts/admin.conf
     - >
+      # Kubespray supports Helm (tiller) for amd64 only. Manually installing for Arm
       if [ "$ARCH" = "arm64" ]; then
         kubectl create -f ./manifests/helm-rbac.yml
         helm init --service-account tiller --tiller-image=jessestuart/tiller --override spec.selector.matchLabels.'name'='tiller',spec.selector.matchLabels.'app'='helm' --output yaml | sed 's@apiVersion: extensions/v1beta1@apiVersion: apps/v1@' | kubectl apply -f -
