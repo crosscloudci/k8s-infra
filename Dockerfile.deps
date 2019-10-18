@@ -1,6 +1,39 @@
 FROM buildpack-deps:bionic
 MAINTAINER "Denver Williams <denver@debian.nz>"
 
+
+# Kubespray deps
+RUN set -ex; \
+	apt-get update; \
+	apt-get install -y \
+  libssl-dev \
+  python3-dev \
+  sshpass \
+  apt-transport-https \
+  jq \
+  ca-certificates \
+  curl \
+  gnupg2 \
+  software-properties-common \
+  python3-pip \
+  rsync
+  
+  
+
+# Golang
+RUN wget -O go.tgz https://golang.org/dl/go1.13.1.linux-amd64.tar.gz \
+   && tar -C /usr/local -xzf go.tgz \
+   && rm go.tgz \
+   && export PATH="/usr/local/go/bin:$PATH" \
+   && go version
+
+ENV GOPATH /go
+ENV PATH $GOPATH/bin:/usr/local/go/bin:$PATH
+
+RUN mkdir -p "$GOPATH/src" "$GOPATH/bin" && chmod -R 777 "$GOPATH"
+
+# Ruby
+
 # skip installing gem documentation
 RUN mkdir -p /usr/local/etc \
 			&& { \
@@ -77,3 +110,22 @@ ENV PATH $GEM_HOME/bin:$BUNDLE_PATH/gems/bin:$PATH
 # adjust permissions of a few directories for running "gem install" as an arbitrary user
 RUN mkdir -p "$GEM_HOME" && chmod 777 "$GEM_HOME"
 # (BUNDLE_PATH = GEM_HOME, no need to mkdir/chown both)
+
+
+# Docker
+# RUN curl -fsSL https://download.docker.com/linux/ubuntu/gpg | apt-key add - && \
+#      add-apt-repository \
+#      "deb [arch=amd64] https://download.docker.com/linux/ubuntu \
+#      $(lsb_release -cs) \
+#      stable" \
+#      && apt update -y && apt-get install docker-ce -y
+
+# Helm 
+ARG VERSION=v2.14.3
+ARG FILENAME=helm-${VERSION}-linux-amd64.tar.gz
+RUN curl -L http://storage.googleapis.com/kubernetes-helm/${FILENAME} | tar zxv -C /tmp
+RUN mv /tmp/linux-amd64/helm /usr/local/bin/
+
+# Kubectl
+RUN curl -LO https://storage.googleapis.com/kubernetes-release/release/v1.14.4/bin/linux/amd64/kubectl \
+    && chmod a+x kubectl && cp kubectl /usr/local/bin/kubectl

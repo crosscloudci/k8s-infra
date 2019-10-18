@@ -3,7 +3,10 @@ MAINTAINER "W Watson <w.watson@vulk.coop>"
 
 COPY . /k8s-infra
 
-RUN cd /k8s-infra && \
-      bundle install
+WORKDIR /k8s-infra
 
-      CMD [ "irb" ]
+RUN bundle install
+
+RUN rake install
+
+RUN python3 -m pip install pip -U && python3 -m pip install -r lib/provisioner/kubespray/kubespray/tests/requirements.txt && python3 -m pip install -r lib/provisioner/kubespray/kubespray/requirements.txt

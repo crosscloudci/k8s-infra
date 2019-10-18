@@ -9,7 +9,9 @@ require 'thor'
 require 'yaml'
 require 'faraday'
 require 'erb'
+require 'fileutils'
 require_relative './kubespray-integration'
+require_relative './k8sutils'
 
 #require 'crosscloudci/ciservice/onap/build_pipeline'
 #require 'crosscloudci/ciservice/build_pipeline'
@@ -20,11 +22,9 @@ class K8sInfra < Thor
   class_option :debug, :type => :boolean, :aliases => "-d"
   class_option :quiet, :type => :boolean, :aliases => "-q"
 
-  #class_option "cross-cloud-config", :type => :string
-  #class_option "integration", :enum => %w{onap test}
-  #class_option "release-type", :enum => %w{stable head master}, :required => true
-
   attr_accessor :logger, :config_location, :pipeline, :hosts
+
+  DATA_DIR = "data/mycluster" 
 
   def initialize(*args)
     @logger = Logger.new(STDOUT)
@@ -46,19 +46,21 @@ class K8sInfra < Thor
 		r
   end
 
-  desc "provision <[--dry-run] or [--config-file=<your/configfile/with/path>] and [--provision-type=<direct or virtual>]", "k8s-infra provisioning CLI Tool"
+  desc "provision <[--dry-run] or [--config-file=<your/configfile/with/path>] or [--summary]", "k8s-infra provisioning CLI Tool"
   long_desc <<-LONGDESC
-     Provisions generates kubespray configuration based on configuration output from terraform.
+     Provisions generates provisioning tool (e.g. kubespray) configuration based on configuration output from terraform.
 
     --provision-type bootstrap kubernetes at the lowest level or insert a layer of virtualization
 
     --dry-run parse configuration and print what it would have used for provisioning 
 
+    --summary Shows a summary of what is sent to the provisioning tool 
+
     --config-path path to configuration file 
 
   LONGDESC
-  option "provision-type", :type => :string, :aliases => "-p"
   option "dry-run", :type => :boolean, :aliases => "-r"
+  option "summary", :type => :boolean, :aliases => "-s"
   option "config-file", :type => :string
   def provision
     @logger.info "Generating provision config for K8s config-file: #{options['config-file']}"
@@ -67,7 +69,7 @@ class K8sInfra < Thor
     unless options['config-file']
       @logger.debug "config-file '#{options['config-file']}"
       @logger.debug "dry-run '#{options['dry-run']}"
-      @logger.debug "provision-type '#{options['provision-type']}"
+      @logger.debug "summary '#{options['summary']}"
 
       puts "No config-file specified -- See help provision command"
       exit 1
@@ -76,28 +78,97 @@ class K8sInfra < Thor
     @logger.debug "cluster_hash '#{@cluster_hash}"
 		if @cluster_hash['k8s_infra'].nil? || @cluster_hash['k8s_infra']['k8s_release'].nil? ||
 		   @cluster_hash['k8s_infra']['arch'].nil? || 
+		   @cluster_hash['k8s_infra']['provision_type'].nil? || 
 			 @cluster_hash['k8s_infra']['nodes'].nil? then 
 			puts "Cluster file has structure errors " 
 			exit 1 
     end
-    if options["provision-type"]=="direct" then
-      kubespray = Kubespray.new(@cluster_hash)
-      config = ERB.new(kubespray.provision_template(), nil, '-')
-		  puts config.result(binding)
-    else
-      config = ERB.new(generic_dry_run_template(), nil, '-')
-		  puts config.result(binding)
+    if !@cluster_hash['k8s_infra']['nodes'].find { |n| n['role'] == "worker" } then
+      errmsg = <<-HEREDOC
+      Cluster config should have a worker node :( 
+      HEREDOC
+      puts errmsg
+      exit 1
     end
-    # if options['dry-run'] then
-    #   puts config.result(binding)
-    # else
-    #   File.open("#{options['output']}", 'w') do |f| 
-    #     f.write config.result(binding)
-    #   end
-    # end
+    if !@cluster_hash['k8s_infra']['nodes'].find { |n| n['role'] == "master" } then
+      errmsg = <<-HEREDOC
+      Cluster config should have a master node :( 
+      HEREDOC
+      puts errmsg
+      exit 1
+    end
+    if @cluster_hash['k8s_infra']['provision_type'] != 'virtual' && @cluster_hash['k8s_infra']['provision_type'] != 'direct' then
+      errmsg = <<-HEREDOC
+      Provision type "local" is not supported. :( 
+      Supported provisioning types: direct
+      See k8s-infra help provision for more details.)
+      HEREDOC
+      puts errmsg
+      exit 1
+    end
+    if @cluster_hash['k8s_infra']["provision_type"]=="direct" then
+      ks = Kubespray.new(@cluster_hash)
+      @cluster_hash = ks.set_urls(@cluster_hash)
+      # Only publish images for HEAD when we are using amd64. This is required because arm64 doesn't get published
+      # on every commit so we use a nightly build instead, which means we don't need to publish for arm64.
+      # unless options['dry-run']
+      #   if @cluster_hash['k8s_infra']['release_type'] == 'head' && @cluster_hash['k8s_infra']['arch'] == 'amd64' then
+      #     K8sUtils.k8s_publish(@cluster_hash['k8s_infra']['k8s_release'], 'linux/amd64', @cluster_hash['k8s_infra']['registry'])
+      #   end
+      # end
+      kubespray = Kubespray.new(@cluster_hash)
+      if options['summary'] then
+        config = ERB.new(generic_dry_run_template(), nil, '-')
+        puts config.result(binding)
+        puts "Successfully completed summary."
+      end
+      # kubeadm version is always stable
+      kubespray_config = ERB.new(kubespray.provision_template(), nil, '-')
+      if options['dry-run'] then
+        inventory_file = "/tmp/hosts.yml"
+        kubeconfig_path = "/tmp/admin.conf"
+      else
+        mkdpwd = FileUtils.pwd() 
+        if ENV["RUBY_ENV"]=="test" then
+          puts "env: #{ENV['RUBY_ENV']}"
+          # if FileUtils.pwd() =~ /aruba/ then
+          mkdans = FileUtils.mkdir_p "../../#{DATA_DIR}"
+          inventory_file = "../../#{DATA_DIR}/hosts.yml"
+          kubeconfig_path = "../../#{DATA_DIR}/artifacts/admin.conf"
+        else
+          puts "env: #{ENV['RUBY_ENV']}"
+          FileUtils.mkdir_p DATA_DIR
+          inventory_file = "#{DATA_DIR}/hosts.yml"
+          kubeconfig_path = "#{DATA_DIR}/artifacts/admin.conf"
+        end
+      end
+      full_path = File.expand_path inventory_file 
+      full_kubeconfig_path = File.expand_path kubeconfig_path 
+
+      puts "Kubespray inventory file: #{full_path}"
+      File.open(inventory_file, 'w') do |f| 
+        f.write kubespray_config.result(binding)
+      end
+      ks = Kubespray.new(@cluster_hash)
+      if options['dry-run'] then
+        puts "Dry-run successfully completed"
+      else
+        cluster = ks.start_kubespray 
+        if cluster[:exit_code] == 0 then
+          puts "KUBECONFIG path: #{full_kubeconfig_path}"
+        else
+          puts "cluster allocation failed"
+        end
+        exit cluster[:exit_code]
+      end
+    else
+      @logger.debug "provision_type = not direct"
+      config = ERB.new(generic_dry_run_template(), nil, '-')
+      puts config.result(binding)
+    end
   end
 
-  desc "generate_config <[--hosts-file=HOSTS_FILE] or [--worker-hosts=<IP1,...,IPN>] [--master-hosts=<IP1,...,IPN>]> --arch=<K8s machine architecture> --host-type=<bare|virtual> --release-type=<stable|head> [--output=OUTPUT_FILE]", "Generate cluster configuration using provided options"
+  desc "generate_config <[--hosts-file=HOSTS_FILE] or [--worker-h osts=<IP1,...,IPN>] [--master-hosts=<IP1,...,IPN>]> --arch=<K8s machine architecture> --provision-type=<direct|virtual> --release-type=<stable|head> [--output=OUTPUT_FILE]", "Generate cluster configuration using provided options"
   long_desc <<-LONGDESC
     Generates the configuration file for the K8s provisioning command.
 
@@ -115,7 +186,7 @@ class K8sInfra < Thor
 
     --arch specifies a supported K8s machine architecture to use (eg. arm64, amd64).
 
-    --host-type specifies install K8s directly on a host with "bare" or running the nodes in containers (eg. kind) on a single host with "virtual"
+    --provision-type specifies install K8s directly on a host with "direct" or running the nodes in containers (eg. kind) on a single host with "virtual"
   LONGDESC
   option "output", :type => :string, :aliases => "-o"
   option "infra-job", :type => :string
@@ -124,9 +195,9 @@ class K8sInfra < Thor
   option "master-hosts", :type => :string
   option "arch", :type => :string, :default => "amd64"
   option "release-type", :type => :string, :default => "stable"
-  option "host-type", :type => :string, :default => "bare"
+  option "provision-type", :type => :string, :default => "direct"
   def generate_config
-    @logger.info "Generating config for K8s #{options['release-type']} #{options['arch']} with #{options['host-type']} host nodes"
+    @logger.info "Generating config for K8s #{options['release-type']} #{options['arch']} with #{options['provision-type']} host nodes"
 
     unless (options['hosts-file'] || (options['worker-hosts'] && options['master-hosts']) || options['infra-job'])
       @logger.debug "hosts file '#{options['hosts-file']}'"
@@ -145,7 +216,7 @@ class K8sInfra < Thor
 
     if options['hosts-file']
       @hosts = load_hosts_file(options['hosts-file'])
-    # TODO: Parse hosts file if hosts-file option is given
+      # TODO: Parse hosts file if hosts-file option is given
     elsif options['infra-job']
       @hosts = get_hosts(options['infra-job'])
       @logger.debug "Infra-job: #{options['infra-job']}"
@@ -161,33 +232,10 @@ class K8sInfra < Thor
     else
       puts "All required options not handled"
     end
-    
 
-    # TODO: Call method to find k8s release based on arch and release type
-
-    stable_release_url="https://storage.googleapis.com/kubernetes-release/release/stable.txt"
-    head_release_url="https://storage.googleapis.com/kubernetes-release-dev/ci-cross/latest.txt"
-    
-
-    release_url = case options['release-type']
-    when "stable"
-      "#{stable_release_url}"
-    when "head"
-      "#{head_release_url}"
-    else
-      puts "Release type #{options['release-type']} unknown!"
-      exit 1
-    end
-
-    response = Faraday.get release_url
-    if response.body.nil?
-      @logger.error "Failed to download release for #{options['release-type']}"
-      return
-    end
-
-    kubernetes_release = "#{response.body}"
-
-    config = ERB.new(cluster_config_template("#{options['arch']}", "#{options['host-type']}", "#{kubernetes_release}"), nil, '-')
+    kubernetes_release = K8sUtils.kubernetes_release("#{options['release-type']}/#{options['arch']}")
+    stable_k8s_release = K8sUtils.kubernetes_release('stable')
+    config = ERB.new(cluster_config_template("#{options['arch']}", "#{options['provision-type']}", "#{kubernetes_release}", "#{stable_k8s_release}", "#{options['release-type']}"), nil, '-')
     if options['output'] then
       if File.exist?(options['output']) then
         puts "#{options['output']} already exists"
@@ -197,6 +245,7 @@ class K8sInfra < Thor
           f.write config.result(binding)
         end
       end
+      puts "Cluster configuration file generated."
     else
       puts config.result(binding)
     end
@@ -221,7 +270,8 @@ class K8sInfra < Thor
 <% @cluster_hash['k8s_infra']['k8s_release']  rescue puts "Cluster file has structure errors "; exit 1  -%>
 <% @cluster_hash['k8s_infra']['arch']   rescue puts "Cluster file has structure errors "  ; exit 1 -%>
 <% @cluster_hash['k8s_infra']['nodes']   rescue puts "Cluster file has structure errors " ; exit 1 -%>
-  }
+<% @cluster_hash['k8s_infra']['provision_type']   rescue puts "Cluster file has structure errors " ; exit 1 -%>
+    }
   end
 
   def generic_dry_run_template
@@ -229,65 +279,36 @@ class K8sInfra < Thor
 all:
      Kubernetes: <%= @cluster_hash['k8s_infra']['k8s_release'] %>
      Architecture: <%= @cluster_hash["k8s_infra"]["arch"] %>
+     Provision_type:: <%= @cluster_hash["k8s_infra"]["provision_type"] %>
      Masters: <%= @cluster_hash["k8s_infra"]["nodes"].find_all{|x| x["role"] == "master"}.count %>
      Workers: <%= @cluster_hash["k8s_infra"]["nodes"].find_all{|x| x["role"] == "master"}.count %>
+     hyperkube_download_url: <%= @cluster_hash['k8s_infra']['hyperkube_download_url'] %> 
+     hyperkube_binary_checksum: <%= @cluster_hash['k8s_infra']['hyperkube_binary_checksum'] %>
+     kubeadm_download_url: <%= @cluster_hash['k8s_infra']['kubeadm_download_url'] %>
+     kubeadm_binary_checksum: <%= @cluster_hash['k8s_infra']['kubeadm_binary_checksum'] %>
   Nodes:
     <% @cluster_hash['k8s_infra']['nodes'].each_with_index do |x, index|  -%>
   ip: <%= x['addr'] %>
       role: <%= x['role'] %>
     <% end -%>
-  }
+    }
   end
 
-  def kubespray_template
+  def cluster_config_template (arch,type,kubernetes_release, stable_k8s_release, release_type)
     %{
-all:
-  vars: 
-     kube_version: <%= @cluster_hash['k8s_infra']['k8s_release'] %>
-     kubeconfig_localhost=true
-     kubectl_localhost=true
-  hosts:
-    <% @cluster_hash['k8s_infra']['nodes'].each_with_index do |x, index|  -%>
-node<%=index %>:
-      ansible_host: <%= x['addr'] %>
-      ip: <%= x['addr'] %>
-      access_ip: <%= x['role'] %>
-    <% end  -%>
-  children:
-    kube-master:
-      hosts:
-        node1:
-        node2:
-    kube-node:
-      hosts:
-        node1:
-        node2:
-        node3:
-        node4:
-    etcd:
-      hosts:
-        node1:
-        node2:
-        node3:
-    k8s-cluster:
-      children:
-        kube-master:
-  }
-  end
-
-  def cluster_config_template (arch,type,kubernetes_release)
-  %{
 k8s_infra:
   arch: <%= "#{arch}" %>
-  host_type: <%= "#{type}" %>
+  provision_type: <%= "#{type}" %>
+  release_type: <%= "#{release_type}" %>
   k8s_release: <%= "#{kubernetes_release}" -%>
+  stable_k8s_release: <%= "#{stable_k8s_release}" -%>
+  registry: crosscloudci
   nodes:
     <%for x in @hosts['nodes'] -%>- addr: <%= x['addr'] %>
       role: <%= x['role'] %>
     <%end rescue puts "Hosts file has structure errors " %>
-  }
+    }
   end
-
 
   def load_hosts_file(hostsfile)
     unless File.exists?(hostsfile)

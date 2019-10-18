@@ -53,3 +53,8 @@ kubespray.env
 lib/
 output
 
+data/
+kubectl
+nodes.env
+.#*
+*.log
