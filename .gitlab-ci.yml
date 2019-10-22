@@ -57,8 +57,6 @@ Provisioning:
       if [ "$ARCH" = "arm64" ]; then
         kubectl create -f ./manifests/helm-rbac.yml
         helm init --service-account tiller --tiller-image=jessestuart/tiller --override spec.selector.matchLabels.'name'='tiller',spec.selector.matchLabels.'app'='helm' --output yaml | sed 's@apiVersion: extensions/v1beta1@apiVersion: apps/v1@' | kubectl apply -f -
-      else
-        helm init --service-account tiller --override spec.selector.matchLabels.'name'='tiller',spec.selector.matchLabels.'app'='helm' --output yaml | sed 's@apiVersion: extensions/v1beta1@apiVersion: apps/v1@' | kubectl apply -f -
       fi
     - popd
     - mkdir ./data
