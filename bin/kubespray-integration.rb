@@ -132,6 +132,7 @@ all:
     nodelocaldns_image_repo: gcr.io/google-containers/k8s-dns-node-cache
     dnsautoscaler_image_repo: gcr.io/google-containers/cluster-proportional-autoscaler-<%= @cluster_hash['k8s_infra']['arch'] %>
     kube_version: <%= @cluster_hash['k8s_infra']['k8s_release'] %>
+    kube_major_version: <%= @cluster_hash['k8s_infra']['stable_k8s_release'].split(".").take(2).join(".") %>
     etcd_deployment_type: host
     container_manager: containerd
     download_container: False
