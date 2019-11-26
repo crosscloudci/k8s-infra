@@ -30,7 +30,7 @@ class Kubespray
 
       #Check if binaries are available
       if cluster_hash['k8s_infra']['release_type'] == 'head' then
-        cluster_hash['k8s_infra']['hyperkube_download_url'] ="https://storage.googleapis.com/kubernetes-release-dev/ci-cross/#{cluster_hash['k8s_infra']['k8s_release']}/bin/linux/#{cluster_hash['k8s_infra']['arch']}/hyperkube"
+        cluster_hash['k8s_infra']['hyperkube_download_url'] ="https://storage.googleapis.com/kubernetes-release-dev/ci/#{cluster_hash['k8s_infra']['k8s_release']}/bin/linux/#{cluster_hash['k8s_infra']['arch']}/hyperkube"
       else
         cluster_hash['k8s_infra']['hyperkube_download_url'] ="https://storage.googleapis.com/kubernetes-release/release/#{cluster_hash['k8s_infra']['k8s_release']}/bin/linux/#{cluster_hash['k8s_infra']['arch']}/hyperkube"
       end
