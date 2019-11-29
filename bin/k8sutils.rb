@@ -3,8 +3,8 @@ require 'rest-client'
 
 class K8sUtils
   STABLE_RELEASE_URL="https://storage.googleapis.com/kubernetes-release/release/stable.txt"
-  HEAD_RELEASE_URL="https://storage.googleapis.com/kubernetes-release-dev/ci/latest.txt"
-  NIGHTLY_RELEASE_URL="https://storage.googleapis.com/kubernetes-release-dev/ci-cross/latest.txt"
+  HEAD_RELEASE_URL="https://storage.googleapis.com/kubernetes-release-dev/ci/k8s-master.txt"
+  HEAD_RELEASE_FAST_URL="https://storage.googleapis.com/kubernetes-release-dev/ci/latest.txt"
 
   def self.kubernetes_release(release_type)
     release_url = case release_type
@@ -15,9 +15,9 @@ class K8sUtils
                   when "stable/arm64"
                     "#{STABLE_RELEASE_URL}"
                   when "head/amd64"
-                    "#{NIGHTLY_RELEASE_URL}"
+                    "#{HEAD_RELEASE_URL}"
                   when "head/arm64"
-                    "#{NIGHTLY_RELEASE_URL}"
+                    "#{HEAD_RELEASE_URL}"
                   else
                     puts "Release type #{release_type} unknown!"
                     exit 1

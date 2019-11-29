@@ -30,14 +30,21 @@ class Kubespray
 
       #Check if binaries are available
       if cluster_hash['k8s_infra']['release_type'] == 'head' then
-        cluster_hash['k8s_infra']['hyperkube_download_url'] ="https://storage.googleapis.com/kubernetes-release-dev/ci-cross/#{cluster_hash['k8s_infra']['k8s_release']}/bin/linux/#{cluster_hash['k8s_infra']['arch']}/hyperkube"
+        cluster_hash['k8s_infra']['kubelet_download_url'] ="https://storage.googleapis.com/kubernetes-release-dev/ci/#{cluster_hash['k8s_infra']['k8s_release']}/bin/linux/#{cluster_hash['k8s_infra']['arch']}/kubelet"
+        cluster_hash['k8s_infra']['kubectl_download_url'] ="https://storage.googleapis.com/kubernetes-release-dev/ci/#{cluster_hash['k8s_infra']['k8s_release']}/bin/linux/#{cluster_hash['k8s_infra']['arch']}/kubectl"
       else
-        cluster_hash['k8s_infra']['hyperkube_download_url'] ="https://storage.googleapis.com/kubernetes-release/release/#{cluster_hash['k8s_infra']['k8s_release']}/bin/linux/#{cluster_hash['k8s_infra']['arch']}/hyperkube"
+        cluster_hash['k8s_infra']['kubelet_download_url'] ="https://storage.googleapis.com/kubernetes-release/release/#{cluster_hash['k8s_infra']['k8s_release']}/bin/linux/#{cluster_hash['k8s_infra']['arch']}/kubelet"
+        cluster_hash['k8s_infra']['kubectl_download_url'] ="https://storage.googleapis.com/kubernetes-release/release/#{cluster_hash['k8s_infra']['k8s_release']}/bin/linux/#{cluster_hash['k8s_infra']['arch']}/kubectl"
       end
       cluster_hash['k8s_infra']['kubeadm_download_url'] ="https://storage.googleapis.com/kubernetes-release/release/#{cluster_hash['k8s_infra']['stable_k8s_release']}/bin/linux/#{cluster_hash['k8s_infra']['arch']}/kubeadm" 
-      cluster_hash['k8s_infra']['hyperkube_binary_checksum']= K8sUtils.k8s_sha(cluster_hash['k8s_infra']['hyperkube_download_url'])
-      if cluster_hash['k8s_infra']['hyperkube_binary_checksum'].nil? then
-        puts "hyperkube_binary_checksum is invalid" 
+      cluster_hash['k8s_infra']['kubelet_binary_checksum']= K8sUtils.k8s_sha(cluster_hash['k8s_infra']['kubelet_download_url'])
+      if cluster_hash['k8s_infra']['kubelet_binary_checksum'].nil? then
+        puts "kubelet_binary_checksum is invalid" 
+        exit 1
+      end
+      cluster_hash['k8s_infra']['kubectl_binary_checksum']= K8sUtils.k8s_sha(cluster_hash['k8s_infra']['kubectl_download_url'])
+      if cluster_hash['k8s_infra']['kubectl_binary_checksum'].nil? then
+        puts "kubectl_binary_checksum is invalid" 
         exit 1
       end
       cluster_hash['k8s_infra']['kubeadm_binary_checksum']= K8sUtils.k8s_sha(cluster_hash['k8s_infra']['kubeadm_download_url'])
@@ -122,9 +129,7 @@ class Kubespray
 all:
   vars: 
     ansible_ssh_common_args: '-o StrictHostKeyChecking=no'
-    <%- if @cluster_hash['k8s_infra']['release_type']=='head' and @cluster_hash['k8s_infra']['arch']=='amd64' -%>
-    kube_image_repo: docker.io/crosscloudci
-    <%- elsif @cluster_hash['k8s_infra']['release_type']=='head' and @cluster_hash['k8s_infra']['arch']=='arm64' -%>
+    <%- if @cluster_hash['k8s_infra']['release_type']=='head' -%>
     kube_image_repo: gcr.io/kubernetes-ci-images
     <%- else -%>
     kube_image_repo: gcr.io/google-containers
@@ -132,13 +137,16 @@ all:
     nodelocaldns_image_repo: gcr.io/google-containers/k8s-dns-node-cache
     dnsautoscaler_image_repo: gcr.io/google-containers/cluster-proportional-autoscaler-<%= @cluster_hash['k8s_infra']['arch'] %>
     kube_version: <%= @cluster_hash['k8s_infra']['k8s_release'] %>
+    kube_major_version: <%= @cluster_hash['k8s_infra']['stable_k8s_release'].split(".").take(2).join(".") %>
     etcd_deployment_type: host
     container_manager: containerd
     download_container: False
     kubeconfig_localhost: true
     kubectl_localhost: false
-    hyperkube_download_url: <%= @cluster_hash['k8s_infra']['hyperkube_download_url'] %> 
-    hyperkube_binary_checksum: <%= @cluster_hash['k8s_infra']['hyperkube_binary_checksum'] %>
+    kubelet_download_url: <%= @cluster_hash['k8s_infra']['kubelet_download_url'] %> 
+    kubelet_binary_checksum: <%= @cluster_hash['k8s_infra']['kubelet_binary_checksum'] %>
+    kubectl_download_url: <%= @cluster_hash['k8s_infra']['kubectl_download_url'] %> 
+    kubectl_binary_checksum: <%= @cluster_hash['k8s_infra']['kubectl_binary_checksum'] %>
     kubeadm_download_url: <%= @cluster_hash['k8s_infra']['kubeadm_download_url'] %>
     kubeadm_binary_checksum: <%= @cluster_hash['k8s_infra']['kubeadm_binary_checksum'] %>
     <%- if @cluster_hash['k8s_infra']['arch']=='amd64' -%>
