@@ -142,6 +142,7 @@ all:
     container_manager: containerd
     download_container: False
     kubeconfig_localhost: true
+    kube_network_plugin_multus: true
     kubectl_localhost: false
     kubelet_download_url: <%= @cluster_hash['k8s_infra']['kubelet_download_url'] %> 
     kubelet_binary_checksum: <%= @cluster_hash['k8s_infra']['kubelet_binary_checksum'] %>
