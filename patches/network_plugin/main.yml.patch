@@ -1,0 +1,11 @@
+--- roles/network_plugin/meta/main.yml	2020-01-31 14:19:20.781278777 -0500
++++ roles/network_plugin/meta/main.new	2020-01-31 14:20:13.024297409 -0500
+@@ -6,7 +6,7 @@
+       - cilium
+ 
+   - role: network_plugin/calico
+-    when: kube_network_plugin == 'calico'
++    when: kube_network_plugin_calico
+     tags:
+       - calico
+ 

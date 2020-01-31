@@ -1,0 +1,10 @@
+--- roles/network_plugin/calico/templates/cni-calico.conflist.j2	2020-01-31 14:26:42.680975351 -0500
++++ roles/network_plugin/calico/templates/cni-calico.conflist.j2.new	2020-01-31 14:26:51.092817654 -0500
+@@ -1,6 +1,6 @@
+ {
+   "name": "cni0",
+-  "cniVersion":"0.3.1",
++  "cniVersion":"0.2.0",
+   "plugins":[
+     {
+ {% if calico_datastore == "kdd" %}
