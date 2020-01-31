@@ -142,9 +142,9 @@ all:
     container_manager: containerd
     download_container: False
     kubeconfig_localhost: true
-    kube_network_plugin: cni
+    kube_network_plugin: calico
+    kube_network_plugin_cni: true
     kube_network_plugin_multus: true
-    kube_network_plugin_calico: true
     kubectl_localhost: false
     kubelet_download_url: <%= @cluster_hash['k8s_infra']['kubelet_download_url'] %> 
     kubelet_binary_checksum: <%= @cluster_hash['k8s_infra']['kubelet_binary_checksum'] %>
