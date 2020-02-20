@@ -18,10 +18,13 @@ You'll need a set of ip addresses to create the K8s cluster.
 *Note: You must have either 3 or more masters.  It doesn't matter how many workers you have.*
 ```
 docker run -v $(pwd):/k8s-infra:latest -v -ti kubespray /bin/bash 
+```
+Inside of the container:
+```
 ./k8s-infra/bin/k8sinfra generate_config --release-type=stable --master-hosts "<your-ip-address>,<your-ip-address>,<your-ip-address>" --worker-hosts "<your-ip-address>,<your-ip-address>,<your-ip-address>" -o /tmp/test.yml; \
 ./k8sinfra provision --config-file '/tmp/test.yml'"  
 ```
-Save the resulting kubeconfig file to your local development machine
+Save the resulting kubeconfig file to your local development machine.
 
 # Useful Developer Dommands 
 
