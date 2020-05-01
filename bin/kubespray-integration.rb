@@ -1,6 +1,8 @@
 require 'open3'
 require 'fileutils'
 require 'logger'
+require 'json'
+require 'yaml'
 require_relative './k8sutils'
 
 class Kubespray
@@ -57,7 +59,68 @@ class Kubespray
     cluster_hash
   end
 
+  def latest_kubespray_release
+    release_url = "https://api.github.com/repos/kubernetes-sigs/kubespray/releases/latest"
+    response = Faraday.get release_url
+    if response.status != 200
+      @logger.error "Failed to get Kubespray release info"
+      exit 1
+    end
+    results = JSON.parse(response.body)
+    latest = results['tag_name']
+    return "#{latest}"
+  end
 
+  def latest_supported_kubernetes(tag)
+    version_url = "https://raw.githubusercontent.com/kubernetes-sigs/kubespray/#{tag}/roles/download/defaults/main.yml"
+    response = Faraday.get version_url
+    if response.status != 200
+      @logger.error "Failed to Kubespray raw file"
+      exit 1
+    end
+    parsed = YAML.load(response.body)
+    return parsed['kube_version']
+  end
+
+  def update_kubespray(tag)
+    if ENV["RUBY_ENV"]=="test" then
+      kubedir=File.expand_path '../../lib/provisioner/kubespray/kubespray'
+    else
+      kubedir=File.expand_path 'lib/provisioner/kubespray/kubespray'
+    end
+
+    commands = [ ]
+    ## Patch for Kubespray v2.12.* (1/2)
+    commands.push("git -C #{kubedir} checkout -- .")
+    ## End of Patch for Kubespray v2.12.* (1/2)
+    commands.push("git -C #{kubedir} checkout master -q")
+    commands.push("git -C #{kubedir} pull --all -q")
+    commands.push("git -C #{kubedir} checkout tags/#{tag} -q")
+
+    commands.each do |command|
+      Open3.popen3(command) do |stdin, stdout, stderr, wait_thr|
+        unless stderr.read.to_s.strip.empty?
+          @logger.error "#{stderr.read}"
+          exit 1
+        end
+      end
+    end
+    puts "Kubespray updated to #{tag}"
+    ## Patch for Kubespray v2.12.* (2/2)
+    multfile='roles/kubernetes-apps/network_plugin/multus/tasks/main.yml'
+    oldtext = File.read("#{kubedir}/#{multfile}")
+    newtext = oldtext.gsub("item|skipped", "item is skipped")
+    File.open("#{kubedir}/#{multfile}", "w") {|file| file.puts newtext}
+    cnifile='roles/network_plugin/meta/main.yml'
+    oldtext = File.read("#{kubedir}/#{cnifile}")
+    newtext = oldtext.gsub(" == 'cni'", "_cni")
+    File.open("#{kubedir}/#{cnifile}", "w") {|file| file.puts newtext}
+    calicofile='roles/network_plugin/calico/templates/cni-calico.conflist.j2'
+    oldtext = File.read("#{kubedir}/#{calicofile}")
+    newtext = oldtext.gsub('"cniVersion":"0.3.1",', '"cniVersion":"0.2.0",')
+    File.open("#{kubedir}/#{calicofile}", "w") {|file| file.puts newtext}
+    ## End of Patch for Kubespray v2.12.* (2/2)
+  end
 
   def start_kubespray
     @logger.debug "pwd: #{FileUtils.pwd()}"
@@ -142,6 +205,11 @@ all:
     container_manager: containerd
     download_container: False
     kubeconfig_localhost: true
+    <%- if @cluster_hash['k8s_infra']['release_type']=='kubespray' -%>
+    kube_network_plugin: calico
+    kube_network_plugin_cni: true
+    kube_network_plugin_multus: true
+    <%- end -%>
     kubectl_localhost: false
     kubelet_download_url: <%= @cluster_hash['k8s_infra']['kubelet_download_url'] %> 
     kubelet_binary_checksum: <%= @cluster_hash['k8s_infra']['kubelet_binary_checksum'] %>
