@@ -90,9 +90,6 @@ class Kubespray
     end
 
     commands = [ ]
-    ## Patch for Kubespray v2.12.* (1/2)
-    commands.push("git -C #{kubedir} checkout -- .")
-    ## End of Patch for Kubespray v2.12.* (1/2)
     commands.push("git -C #{kubedir} checkout master -q")
     commands.push("git -C #{kubedir} pull --all -q")
     commands.push("git -C #{kubedir} checkout tags/#{tag} -q")
@@ -106,20 +103,6 @@ class Kubespray
       end
     end
     puts "Kubespray updated to #{tag}"
-    ## Patch for Kubespray v2.12.* (2/2)
-    multfile='roles/kubernetes-apps/network_plugin/multus/tasks/main.yml'
-    oldtext = File.read("#{kubedir}/#{multfile}")
-    newtext = oldtext.gsub("item|skipped", "item is skipped")
-    File.open("#{kubedir}/#{multfile}", "w") {|file| file.puts newtext}
-    cnifile='roles/network_plugin/meta/main.yml'
-    oldtext = File.read("#{kubedir}/#{cnifile}")
-    newtext = oldtext.gsub(" == 'cni'", "_cni")
-    File.open("#{kubedir}/#{cnifile}", "w") {|file| file.puts newtext}
-    calicofile='roles/network_plugin/calico/templates/cni-calico.conflist.j2'
-    oldtext = File.read("#{kubedir}/#{calicofile}")
-    newtext = oldtext.gsub('"cniVersion":"0.3.1",', '"cniVersion":"0.2.0",')
-    File.open("#{kubedir}/#{calicofile}", "w") {|file| file.puts newtext}
-    ## End of Patch for Kubespray v2.12.* (2/2)
   end
 
   def start_kubespray
@@ -207,7 +190,6 @@ all:
     kubeconfig_localhost: true
     <%- if @cluster_hash['k8s_infra']['release_type']=='kubespray' -%>
     kube_network_plugin: calico
-    kube_network_plugin_cni: true
     kube_network_plugin_multus: true
     <%- end -%>
     kubectl_localhost: false
