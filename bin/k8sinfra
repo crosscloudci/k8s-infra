@@ -153,6 +153,10 @@ class K8sInfra < Thor
       if options['dry-run'] then
         puts "Dry-run successfully completed"
       else
+        if @cluster_hash['k8s_infra']["release_type"]=="kubespray" then
+	  latest = ks.latest_kubespray_release
+	  ks.update_kubespray(latest)
+        end
         cluster = ks.start_kubespray 
         if cluster[:exit_code] == 0 then
           puts "KUBECONFIG path: #{full_kubeconfig_path}"
@@ -233,8 +237,17 @@ class K8sInfra < Thor
       puts "All required options not handled"
     end
 
-    kubernetes_release = K8sUtils.kubernetes_release("#{options['release-type']}/#{options['arch']}")
-    stable_k8s_release = K8sUtils.kubernetes_release('stable')
+    unless options['release-type'] == "kubespray"
+      kubernetes_release = K8sUtils.kubernetes_release("#{options['release-type']}/#{options['arch']}")
+      stable_k8s_release = K8sUtils.kubernetes_release('stable')
+    else
+      ks = Kubespray.new(@cluster_hash)
+      ks_version = ks.latest_kubespray_release
+      k8s_version = ks.latest_supported_kubernetes(ks_version)
+      kubernetes_release = k8s_version + "\n"
+      stable_k8s_release = k8s_version + "\n"
+    end
+
     config = ERB.new(cluster_config_template("#{options['arch']}", "#{options['provision-type']}", "#{kubernetes_release}", "#{stable_k8s_release}", "#{options['release-type']}"), nil, '-')
     if options['output'] then
       if File.exist?(options['output']) then
