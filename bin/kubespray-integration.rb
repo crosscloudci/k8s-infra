@@ -60,14 +60,14 @@ class Kubespray
   end
 
   def latest_kubespray_release
-    release_url = "https://api.github.com/repos/kubernetes-sigs/kubespray/releases/latest"
+    release_url = "https://api.github.com/repos/kubernetes-sigs/kubespray/tags"
     response = Faraday.get release_url
     if response.status != 200
       @logger.error "Failed to get Kubespray release info"
       exit 1
     end
     results = JSON.parse(response.body)
-    latest = results['tag_name']
+    latest = results[0]["name"]
     return "#{latest}"
   end
 
