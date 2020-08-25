@@ -1,6 +1,8 @@
 require 'open3'
 require 'fileutils'
 require 'logger'
+require 'json'
+require 'yaml'
 require_relative './k8sutils'
 
 class Kubespray
@@ -57,7 +59,51 @@ class Kubespray
     cluster_hash
   end
 
+  def latest_kubespray_release
+    release_url = "https://api.github.com/repos/kubernetes-sigs/kubespray/releases/latest"
+    response = Faraday.get release_url
+    if response.status != 200
+      @logger.error "Failed to get Kubespray release info"
+      exit 1
+    end
+    results = JSON.parse(response.body)
+    latest = results['tag_name']
+    return "#{latest}"
+  end
 
+  def latest_supported_kubernetes(tag)
+    version_url = "https://raw.githubusercontent.com/kubernetes-sigs/kubespray/#{tag}/roles/download/defaults/main.yml"
+    response = Faraday.get version_url
+    if response.status != 200
+      @logger.error "Failed to Kubespray raw file"
+      exit 1
+    end
+    parsed = YAML.load(response.body)
+    return parsed['kube_version']
+  end
+
+  def update_kubespray(tag)
+    if ENV["RUBY_ENV"]=="test" then
+      kubedir=File.expand_path '../../lib/provisioner/kubespray/kubespray'
+    else
+      kubedir=File.expand_path 'lib/provisioner/kubespray/kubespray'
+    end
+
+    commands = [ ]
+    commands.push("git -C #{kubedir} checkout master -q")
+    commands.push("git -C #{kubedir} pull --all -q")
+    commands.push("git -C #{kubedir} checkout tags/#{tag} -q")
+
+    commands.each do |command|
+      Open3.popen3(command) do |stdin, stdout, stderr, wait_thr|
+        unless stderr.read.to_s.strip.empty?
+          @logger.error "#{stderr.read}"
+          exit 1
+        end
+      end
+    end
+    puts "Kubespray updated to #{tag}"
+  end
 
   def start_kubespray
     @logger.debug "pwd: #{FileUtils.pwd()}"
@@ -132,7 +178,7 @@ all:
     <%- if @cluster_hash['k8s_infra']['release_type']=='head' -%>
     kube_image_repo: gcr.io/kubernetes-ci-images
     <%- else -%>
-    kube_image_repo: gcr.io/google-containers
+    kube_image_repo: k8s.gcr.io
     <%- end -%>
     nodelocaldns_image_repo: gcr.io/google-containers/k8s-dns-node-cache
     dnsautoscaler_image_repo: gcr.io/google-containers/cluster-proportional-autoscaler-<%= @cluster_hash['k8s_infra']['arch'] %>
@@ -142,6 +188,10 @@ all:
     container_manager: containerd
     download_container: False
     kubeconfig_localhost: true
+    <%- if @cluster_hash['k8s_infra']['release_type']=='kubespray' -%>
+    kube_network_plugin: calico
+    kube_network_plugin_multus: true
+    <%- end -%>
     kubectl_localhost: false
     kubelet_download_url: <%= @cluster_hash['k8s_infra']['kubelet_download_url'] %> 
     kubelet_binary_checksum: <%= @cluster_hash['k8s_infra']['kubelet_binary_checksum'] %>
