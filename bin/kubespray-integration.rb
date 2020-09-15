@@ -178,7 +178,7 @@ all:
     <%- if @cluster_hash['k8s_infra']['release_type']=='head' -%>
     kube_image_repo: gcr.io/kubernetes-ci-images
     <%- else -%>
-    kube_image_repo: gcr.io/google-containers
+    kube_image_repo: k8s.gcr.io
     <%- end -%>
     nodelocaldns_image_repo: gcr.io/google-containers/k8s-dns-node-cache
     dnsautoscaler_image_repo: gcr.io/google-containers/cluster-proportional-autoscaler-<%= @cluster_hash['k8s_infra']['arch'] %>
