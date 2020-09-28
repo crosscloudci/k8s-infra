@@ -191,6 +191,7 @@ all:
     <%- if @cluster_hash['k8s_infra']['release_type']=='kubespray' -%>
     kube_network_plugin: calico
     kube_network_plugin_multus: true
+    multus_cni_version: "0.3.1"
     <%- end -%>
     kubectl_localhost: false
     kubelet_download_url: <%= @cluster_hash['k8s_infra']['kubelet_download_url'] %> 
