@@ -50,8 +50,11 @@ Provisioning:
     - echo "$SSH_KEY" > .id_rsa && chmod 400 .id_rsa
     - eval $(ssh-agent) && ssh-add .id_rsa
     - pushd /k8s-infra
+    - echo /k8s-infra/bin/k8sinfra generate_config --arch="$ARCH" --release-type="$PIPELINE_RELEASE_TYPE" --infra-job="$INFRA_PIPELINE" -o /tmp/cluster.yml
     - /k8s-infra/bin/k8sinfra generate_config --arch="$ARCH" --release-type="$PIPELINE_RELEASE_TYPE" --infra-job="$INFRA_PIPELINE" -o /tmp/cluster.yml
+    - cat /tmp/cluster.yml
     - /k8s-infra/bin/k8sinfra provision --config-file '/tmp/cluster.yml'
+    - sleep 120
     - export KUBECONFIG=/k8s-infra/data/mycluster/artifacts/admin.conf
     - >
       if [ "$ARCH" == "arm64" ]; then
