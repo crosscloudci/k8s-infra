@@ -307,14 +307,14 @@ all:
     }
   end
 
-  def cluster_config_template (arch,type,kubernetes_release, stable_k8s_release, release_type)
+  def cluster_config_template (arch,type,kubernetes_release,stable_k8s_release,release_type)
     %{
 k8s_infra:
   arch: <%= "#{arch}" %>
   provision_type: <%= "#{type}" %>
   release_type: <%= "#{release_type}" %>
-  k8s_release: <%= "#{kubernetes_release}" -%>
-  stable_k8s_release: <%= "#{stable_k8s_release}" -%>
+  k8s_release: <%= "#{kubernetes_release}" %>
+  stable_k8s_release: <%= "#{stable_k8s_release}" %>
   registry: crosscloudci
   nodes:
     <%for x in @hosts['nodes'] -%>- addr: <%= x['addr'] %>
