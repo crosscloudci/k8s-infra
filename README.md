@@ -26,7 +26,7 @@ Inside of the container:
 ```
 Save the resulting kubeconfig file to your local development machine.
 
-# Useful Developer Dommands 
+# Useful Developer Commands 
 
 ### Build deps for k8s-infra 
 
