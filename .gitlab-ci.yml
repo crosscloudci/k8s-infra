@@ -81,6 +81,7 @@ Kubernetes_destroy:
   script:
     - echo "$SSH_KEY" > .id_rsa && chmod 400 .id_rsa
     - eval $(ssh-agent) && ssh-add .id_rsa
+    - sleep 100000000000000000000000000000000000000000000
     - cp -r ./data /k8s-infra/lib/provisioner/kubespray/kubespray/
     - cd /k8s-infra/lib/provisioner/kubespray/kubespray/
     # Don't fail when running deprovisoning, packet networking always fails to come back up.
