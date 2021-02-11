@@ -53,7 +53,22 @@ Provisioning:
     - echo /k8s-infra/bin/k8sinfra generate_config --arch="$ARCH" --release-type="$PIPELINE_RELEASE_TYPE" --infra-job="$INFRA_PIPELINE" -o /tmp/cluster.yml
     - /k8s-infra/bin/k8sinfra generate_config --arch="$ARCH" --release-type="$PIPELINE_RELEASE_TYPE" --infra-job="$INFRA_PIPELINE" -o /tmp/cluster.yml
     - cat /tmp/cluster.yml
-    - /k8s-infra/bin/k8sinfra provision --config-file '/tmp/cluster.yml'
+    - >
+      if /k8s-infra/bin/k8sinfra provision --config-file '/tmp/cluster.yml'; then
+        popd
+        mkdir ./data
+        cp /tmp/cluster.yml ./data
+        cp -r /k8s-infra/data/mycluster ./data
+        mkdir -p ./data/packet
+        cp /k8s-infra/data/mycluster/artifacts/admin.conf ./data/packet/kubeconfig
+        pushd /k8s-infra
+      else
+        popd
+        mkdir ./data
+        cp /tmp/cluster.yml ./data
+        cp -r /k8s-infra/data/mycluster ./data
+        exit 1
+      fi
     - export KUBECONFIG=/k8s-infra/data/mycluster/artifacts/admin.conf
     - >
       if [ "$ARCH" == "arm64" ]; then
@@ -62,12 +77,6 @@ Provisioning:
       else
          echo 'skip helm deploy when ARCH is amd64, Kubespray will install helm.'
       fi
-    - popd
-    - mkdir ./data
-    - cp /tmp/cluster.yml ./data
-    - cp -r /k8s-infra/data/mycluster ./data
-    - mkdir -p ./data/packet
-    - cp /k8s-infra/data/mycluster/artifacts/admin.conf ./data/packet/kubeconfig
   artifacts:
     when: always
     expire_in: 4 weeks
