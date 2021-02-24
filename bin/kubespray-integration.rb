@@ -72,7 +72,7 @@ class Kubespray
   end
 
   def latest_supported_kubernetes(tag)
-    version_url = "https://raw.githubusercontent.com/kubernetes-sigs/kubespray/#{tag}/roles/download/defaults/main.yml"
+    version_url = "https://raw.githubusercontent.com/kubernetes-sigs/kubespray/#{tag}/roles/kubespray-defaults/defaults/main.yaml"
     response = Faraday.get version_url
     if response.status != 200
       @logger.error "Failed to Kubespray raw file"
