@@ -118,7 +118,7 @@ class Kubespray
     end
     if @cluster_hash['k8s_infra']['arch'] == 'arm64'
       FileUtils.cp_r(sampledir, datadir)
-      FileUtils.cp_r("#{plugindir}/roles/container-engine/containerd/vars/ubuntu-amd64.yml", "#{plugindir}/roles/container-engine/containerd/vars/ubuntu-arm64.yml")
+      FileUtils.cp_r("#{plugindir}/roles/container-engine/containerd/vars/ubuntu.yml", "#{plugindir}/roles/container-engine/containerd/vars/ubuntu.yml")
     else
       FileUtils.cp_r(sampledir, datadir)
     end
