@@ -116,12 +116,12 @@ class Kubespray
       plugindir=File.expand_path 'lib/provisioner/kubespray/kubespray'
       datadir=File.expand_path DATA_DIR
     end
-    if @cluster_hash['k8s_infra']['arch'] == 'arm64'
-      FileUtils.cp_r(sampledir, datadir)
-      FileUtils.cp_r("#{plugindir}/roles/container-engine/containerd/vars/ubuntu.yml", "#{plugindir}/roles/container-engine/containerd/vars/ubuntu.yml")
-    else
-      FileUtils.cp_r(sampledir, datadir)
-    end
+    # if @cluster_hash['k8s_infra']['arch'] == 'arm64'
+    #   FileUtils.cp_r(sampledir, datadir)
+    #   FileUtils.cp_r("#{plugindir}/roles/container-engine/containerd/vars/ubuntu.yml", "#{plugindir}/roles/container-engine/containerd/vars/ubuntu.yml")
+    # else
+    FileUtils.cp_r(sampledir, datadir)
+    # end
     # output = `ansible-playbook -i data/mycluster/hosts.yml --become --become-user=root lib/provisioner/kubespray/kubespray/cluster.yml`
     # output = `ansible-playbook -i #{datadir}/hosts.yml --become --become-user=root #{plugindir}/cluster.yml`
     complete_stdout, complete_stderr, exitstatus = "passed", "passed", 0
