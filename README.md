@@ -4,6 +4,8 @@
 # Quick start
 You'll need a set of ip addresses to create the K8s cluster.
 
+Optionally use the [infra-provisioning](https://github.com/crosscloudci/infra-provisioning) to provision machines (eg. Equinix Metal)
+
 #### Build the prerequisites
 ```
    docker build -t crosscloudci/k8s-infra-deps:latest --file Dockerfile.deps .
@@ -91,7 +93,7 @@ Save the resulting kubeconfig file to your local development machine.
 To test with the gitlab integration (to get the source IPs from gitlab instead of manually providing them), 
 you can use one of the following two options:
 
-Pre-req: Successful provision Packet machines using infra-provisioning
+Pre-req: Successful provision Packet machines using [infra-provisioning](https://github.com/crosscloudci/infra-provisioning)
 Option 1: use existing pipeline
 
 Go to https://gitlab.cncf.ci/cncf/infra-provisioning/pipelines
