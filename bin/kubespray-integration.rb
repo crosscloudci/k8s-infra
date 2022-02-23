@@ -180,12 +180,13 @@ all:
     <%- else -%>
     kube_image_repo: k8s.gcr.io
     <%- end -%>
-    nodelocaldns_image_repo: gcr.io/google-containers/k8s-dns-node-cache
-    dnsautoscaler_image_repo: gcr.io/google-containers/cluster-proportional-autoscaler-<%= @cluster_hash['k8s_infra']['arch'] %>
+    nodelocaldns_image_repo: k8s.gcr.io/dns/k8s-dns-node-cache
+    dnsautoscaler_image_repo: k8s.gcr.io/cpa/cluster-proportional-autoscaler
     kube_version: <%= @cluster_hash['k8s_infra']['k8s_release'] %>
     kube_major_version: <%= @cluster_hash['k8s_infra']['stable_k8s_release'].split(".").take(2).join(".") %>
     etcd_deployment_type: host
-    container_manager: containerd
+    container_manager: docker
+    resolvconf_mode: docker_dns
     download_container: False
     kubeconfig_localhost: true
     <%- if @cluster_hash['k8s_infra']['release_type']=='kubespray' -%>
