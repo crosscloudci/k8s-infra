@@ -188,7 +188,6 @@ all:
     container_manager: docker
     resolvconf_mode: docker_dns
     download_container: False
-    artifacts_dir: /tmp/artifacts
     kubeconfig_localhost: true
     <%- if @cluster_hash['k8s_infra']['release_type']=='kubespray' -%>
     kube_network_plugin: calico
