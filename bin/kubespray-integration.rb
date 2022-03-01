@@ -177,32 +177,14 @@ all:
     ansible_ssh_common_args: '-o StrictHostKeyChecking=no'
     <%- if @cluster_hash['k8s_infra']['release_type']=='head' -%>
     kube_image_repo: gcr.io/kubernetes-ci-images
-    <%- else -%>
-    kube_image_repo: k8s.gcr.io
     <%- end -%>
-    nodelocaldns_image_repo: k8s.gcr.io/dns/k8s-dns-node-cache
-    dnsautoscaler_image_repo: k8s.gcr.io/cpa/cluster-proportional-autoscaler
-    kube_version: <%= @cluster_hash['k8s_infra']['k8s_release'] %>
-    kube_major_version: <%= @cluster_hash['k8s_infra']['stable_k8s_release'].split(".").take(2).join(".") %>
-    etcd_deployment_type: host
     container_manager: docker
-    download_container: False
     kubeconfig_localhost: true
     <%- if @cluster_hash['k8s_infra']['release_type']=='kubespray' -%>
     kube_network_plugin: calico
     kube_network_plugin_multus: true
     <%- end -%>
     kubectl_localhost: false
-    kubelet_download_url: <%= @cluster_hash['k8s_infra']['kubelet_download_url'] %> 
-    kubelet_binary_checksum: <%= @cluster_hash['k8s_infra']['kubelet_binary_checksum'] %>
-    kubectl_download_url: <%= @cluster_hash['k8s_infra']['kubectl_download_url'] %> 
-    kubectl_binary_checksum: <%= @cluster_hash['k8s_infra']['kubectl_binary_checksum'] %>
-    kubeadm_download_url: <%= @cluster_hash['k8s_infra']['kubeadm_download_url'] %>
-    kubeadm_binary_checksum: <%= @cluster_hash['k8s_infra']['kubeadm_binary_checksum'] %>
-    <%- if @cluster_hash['k8s_infra']['arch']=='amd64' -%>
-    helm_enabled: true
-    helm_deployment_type: host
-    <%- end -%>
   hosts:
     <%- @cluster_hash['k8s_infra']['nodes'].each_with_index do |x, index| -%>
     node<%=index %>:
