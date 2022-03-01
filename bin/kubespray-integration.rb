@@ -186,7 +186,6 @@ all:
     kube_major_version: <%= @cluster_hash['k8s_infra']['stable_k8s_release'].split(".").take(2).join(".") %>
     etcd_deployment_type: host
     container_manager: docker
-    resolvconf_mode: docker_dns
     download_container: False
     kubeconfig_localhost: true
     <%- if @cluster_hash['k8s_infra']['release_type']=='kubespray' -%>
