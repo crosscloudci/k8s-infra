@@ -1,6 +1,8 @@
-FROM ubuntu:bionic-20200807
+FROM ubuntu:focal-20220316
 MAINTAINER "Denver Williams <denver@debian.nz>"
 
+ARG TZ=Etc/UTC
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
 # Kubespray deps
 RUN apt update -y \

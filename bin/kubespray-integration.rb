@@ -178,7 +178,7 @@ all:
     <%- if @cluster_hash['k8s_infra']['release_type']=='head' -%>
     kube_image_repo: gcr.io/kubernetes-ci-images
     <%- end -%>
-    container_manager: docker
+    container_manager: containerd
     kubeconfig_localhost: true
     <%- if @cluster_hash['k8s_infra']['release_type']=='kubespray' -%>
     kube_network_plugin: calico
